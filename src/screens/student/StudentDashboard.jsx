@@ -7,7 +7,7 @@ import {
   AlertCircle,
   CheckCircle2,
 } from 'lucide-react';
-import StatCard from '../components/StatCard';
+import StatCard from '../../components/StatCard';
 
 export const StudentDashboard = () => {
   const [stats] = useState({

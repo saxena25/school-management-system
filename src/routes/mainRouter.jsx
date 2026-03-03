@@ -2,9 +2,9 @@ import { createBrowserRouter } from "react-router-dom";
 import Auth, { authLoader } from "../screens/auth";
 import DashboardLayout from "../layout/DashboardLayout";
 import ProtectedRoute from "../middleware/ProtectedRoute";
-import PrincipalDashboard from "../screens/PrincipalDashboard";
-import TeacherDashboard from "../screens/TeacherDashboard";
-import StudentDashboard from "../screens/StudentDashboard";
+import PrincipalDashboard from "../screens/principal/PrincipalDashboard";
+import TeacherDashboard from "../screens/teacher/TeacherDashboard";
+import StudentDashboard from "../screens/student/StudentDashboard";
 
 const renderDashboard = () => {
   // Get user from localStorage to determine role

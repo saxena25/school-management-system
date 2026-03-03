@@ -11,7 +11,7 @@ import {
   Briefcase,
   TrendingUp,
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const Sidebar = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
@@ -67,12 +67,12 @@ export const Sidebar = ({ isOpen, onClose }) => {
       >
         <div className="flex flex-col h-full">
           {/* Logo Section */}
-          <div className="p-6 border-b border-gray-700">
+          <div className="px-6 py-4 border-b border-gray-700">
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <GraduationCap size={28} className="text-blue-400" />
               <span>EduMS</span>
             </h2>
-            <p className="text-gray-400 text-sm mt-2 capitalize">
+            <p className="text-gray-400 text-sm mt-1 capitalize">
               {user?.role} Portal
             </p>
           </div>

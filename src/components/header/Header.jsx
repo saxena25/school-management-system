@@ -1,6 +1,7 @@
 import React from 'react';
 import { LogOut, Menu, X, Bell, User } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
+import Container from '../ui-components/container';
 
 export const Header = ({ onSidebarToggle, sidebarOpen }) => {
   const { user, logout } = useAuth();
@@ -22,7 +23,7 @@ export const Header = ({ onSidebarToggle, sidebarOpen }) => {
 
   return (
     <header className="bg-white shadow-md border-b border-gray-200 sticky top-0 z-40">
-      <div className="flex items-center justify-between px-4 md:px-6 py-4">
+      <Container className="flex items-center justify-between px-4 md:px-6 py-4">
         {/* Left Section */}
         <div className="flex items-center gap-4">
           <button
@@ -85,7 +86,7 @@ export const Header = ({ onSidebarToggle, sidebarOpen }) => {
             )}
           </div>
         </div>
-      </div>
+      </Container>
     </header>
   );
 };

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { Sidebar } from '../components/Sidebar';
-import { Header } from '../components/Header';
+import React, { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import Sidebar from "../components/sidebar/Sidebar";
+import Header from "../components/header/Header";
 
 export const DashboardLayout = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -16,18 +16,14 @@ export const DashboardLayout = ({ children }) => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen w-full bg-gray-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header
           onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
           sidebarOpen={sidebarOpen}
         />
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-4 md:p-6">
-            {children}
-          </div>
-        </main>
+        <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   );

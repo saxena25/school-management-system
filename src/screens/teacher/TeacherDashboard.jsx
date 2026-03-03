@@ -7,7 +7,7 @@ import {
   FileText,
   AlertCircle,
 } from 'lucide-react';
-import StatCard from '../components/StatCard';
+import StatCard from '../../components/StatCard';
 
 export const TeacherDashboard = () => {
   const [stats] = useState({
