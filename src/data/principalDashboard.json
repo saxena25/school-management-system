@@ -1,0 +1,29 @@
+{
+  "stats": {
+    "totalStudents": 1240,
+    "totalTeachers": 85,
+    "totalClasses": 42,
+    "averageAttendance": 92,
+    "passRate": 88,
+    "eventsUpcoming": 5
+  },
+  "chartData": [
+    { "label": "Class A", "value": 45, "pass": 42, "fail": 3 },
+    { "label": "Class B", "value": 48, "pass": 45, "fail": 3 },
+    { "label": "Class C", "value": 42, "pass": 38, "fail": 4 },
+    { "label": "Class D", "value": 40, "pass": 36, "fail": 4 },
+    { "label": "Class E", "value": 38, "pass": 34, "fail": 4 }
+  ],
+  "recentActivities": [
+    { "title": "New admission", "time": "2 hours ago" },
+    { "title": "Fee payment received", "time": "4 hours ago" },
+    { "title": "Staff meeting completed", "time": "1 day ago" },
+    { "title": "Exam scheduled", "time": "2 days ago" }
+  ],
+  "alerts": [
+    { "message": "Low attendance in Class C", "severity": "high" },
+    { "message": "Exam materials ready for printing", "severity": "medium" },
+    { "message": "Teacher training session tomorrow", "severity": "low" },
+    { "message": "Budget allocation pending", "severity": "high" }
+  ]
+}

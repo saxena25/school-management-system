@@ -34,6 +34,18 @@ export const AuthProvider = ({ children }) => {
       joinDate: new Date().toISOString(),
     };
 
+    // For admin, set additional permissions
+    if (role === 'admin') {
+      userData.permissions = [
+        'manage_timetable',
+        'manage_exams',
+        'manage_students',
+        'manage_teachers',
+        'manage_fees',
+        'manage_profiles'
+      ];
+    }
+
     setUser(userData);
     setIsAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(userData));

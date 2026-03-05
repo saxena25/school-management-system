@@ -1,0 +1,7 @@
+{
+  "teachers": [
+    { "id": 1, "name": "Mr. Kumar", "email": "kumar@school.com", "phone": "9999999999", "subjects": ["Mathematics", "Physics"], "classes": ["10A", "11A"], "qualifications": "B.Tech, M.Sc", "joinDate": "2020-06-15" }
+  ],
+  "subjects": ["Mathematics","English","Science","History","Geography","Hindi","Computer Science","Physics","Chemistry","Biology"],
+  "classes": ["8A","8B","9A","9B","10A","10B","11A","11B","12A","12B"]
+}

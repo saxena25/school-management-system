@@ -1,0 +1,23 @@
+{
+  "stats": {
+    "totalCourses": 6,
+    "currentGpa": 3.8,
+    "attendanceRate": 96,
+    "completedAssignments": 18,
+    "upcomingExams": 3,
+    "overallRank": 5
+  },
+  "courses": [
+    { "name": "Mathematics", "grade": "A", "progress": 85 },
+    { "name": "Science", "grade": "A", "progress": 88 },
+    { "name": "English", "grade": "B+", "progress": 80 },
+    { "name": "History", "grade": "A", "progress": 90 },
+    { "name": "Physics", "grade": "A", "progress": 87 },
+    { "name": "Chemistry", "grade": "B+", "progress": 82 }
+  ],
+  "upcomingAssignments": [
+    { "title": "Math Project - Statistics", "dueDate": "Mar 5, 2026", "status": "pending" },
+    { "title": "Science Lab Report", "dueDate": "Mar 7, 2026", "status": "in-progress" },
+    { "title": "English Essay", "dueDate": "Mar 10, 2026", "status": "pending" }
+  ]
+}

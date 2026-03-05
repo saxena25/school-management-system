@@ -21,6 +21,7 @@ function Auth() {
     { id: 'student', label: 'Student', icon: '👨‍🎓' },
     { id: 'teacher', label: 'Teacher', icon: '👨‍🏫' },
     { id: 'principal', label: 'Principal', icon: '👔' },
+    { id: 'admin', label: 'Admin', icon: '⚙️' },
   ];
 
   const handleInputChange = (e) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Users,
   BookOpen,
@@ -8,28 +8,10 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import StatCard from '../../components/StatCard';
+import dashboardData from '../../data/teacherDashboard.json';
 
 export const TeacherDashboard = () => {
-  const [stats] = useState({
-    totalStudents: 120,
-    totalClasses: 8,
-    assignmentsSet: 24,
-    averageGrade: 78,
-    classDuration: '45 min',
-    submissionRate: 92,
-  });
-
-  const classes = [
-    { name: 'Class 10A', students: 45, nextClass: 'Today 2:00 PM' },
-    { name: 'Class 10B', students: 42, nextClass: 'Today 3:00 PM' },
-    { name: 'Class 11A', students: 48, nextClass: 'Tomorrow 10:00 AM' },
-  ];
-
-  const recentAssignments = [
-    { title: 'Math Chapter 5 Exercises', dueDate: 'Mar 5, 2026', submissions: 40, total: 45 },
-    { title: 'Science Project - Solar System', dueDate: 'Mar 8, 2026', submissions: 35, total: 45 },
-    { title: 'English Essay Writing', dueDate: 'Mar 3, 2026', submissions: 42, total: 45 },
-  ];
+  const { stats, classes, recentAssignments, todaySchedule, performance } = dashboardData;
 
   return (
     <div className="space-y-6">
@@ -159,12 +141,7 @@ export const TeacherDashboard = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
           <h2 className="text-lg font-bold text-gray-800 mb-4">Today's Schedule</h2>
           <div className="space-y-3">
-            {[
-              { class: 'Class 10A', time: '10:00 AM', duration: '45 min' },
-              { class: 'Class 10B', time: '11:00 AM', duration: '45 min' },
-              { class: 'Class 11A', time: '2:00 PM', duration: '45 min' },
-              { class: 'Class 12B', time: '3:00 PM', duration: '45 min' },
-            ].map((schedule, idx) => (
+            {todaySchedule.map((schedule, idx) => (
               <div
                 key={idx}
                 className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200"
@@ -183,12 +160,7 @@ export const TeacherDashboard = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
           <h2 className="text-lg font-bold text-gray-800 mb-4">Class Performance</h2>
           <div className="space-y-4">
-            {[
-              { class: 'Class 10A', avg: 85, trend: 'up' },
-              { class: 'Class 10B', avg: 82, trend: 'up' },
-              { class: 'Class 11A', avg: 88, trend: 'up' },
-              { class: 'Class 12B', avg: 80, trend: 'down' },
-            ].map((perf, idx) => (
+            {performance.map((perf, idx) => (
               <div key={idx}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-medium text-gray-700">{perf.class}</span>

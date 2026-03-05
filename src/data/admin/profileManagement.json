@@ -1,0 +1,14 @@
+{
+  "userProfile": {
+    "name": "Admin User",
+    "email": "admin@school.com",
+    "phone": "9999999999",
+    "department": "Administration",
+    "bio": "School Administrator",
+    "address": "",
+    "joinDate": "2023-01-15"
+  },
+  "profiles": [
+    { "id": 1, "name": "Admin User", "email": "admin@school.com", "role": "Administrator", "phone": "9999999999", "status": "Active", "joinDate": "2023-01-15" }
+  ]
+}

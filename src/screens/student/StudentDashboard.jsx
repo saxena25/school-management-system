@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   BookOpen,
   Award,
@@ -8,34 +8,14 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import StatCard from '../../components/StatCard';
+import Container from '../../components/ui-components/container';
+import dashboardData from '../../data/studentDashboard.json';
 
 export const StudentDashboard = () => {
-  const [stats] = useState({
-    totalCourses: 6,
-    currentGpa: 3.8,
-    attendanceRate: 96,
-    completedAssignments: 18,
-    upcomingExams: 3,
-    overallRank: 5,
-  });
-
-  const courses = [
-    { name: 'Mathematics', grade: 'A', progress: 85 },
-    { name: 'Science', grade: 'A', progress: 88 },
-    { name: 'English', grade: 'B+', progress: 80 },
-    { name: 'History', grade: 'A', progress: 90 },
-    { name: 'Physics', grade: 'A', progress: 87 },
-    { name: 'Chemistry', grade: 'B+', progress: 82 },
-  ];
-
-  const upcomingAssignments = [
-    { title: 'Math Project - Statistics', dueDate: 'Mar 5, 2026', status: 'pending' },
-    { title: 'Science Lab Report', dueDate: 'Mar 7, 2026', status: 'in-progress' },
-    { title: 'English Essay', dueDate: 'Mar 10, 2026', status: 'pending' },
-  ];
+  const { stats, courses, upcomingAssignments } = dashboardData;
 
   return (
-    <div className="space-y-6">
+    <Container className="space-y-6 py-6">
       {/* Welcome Section */}
       <div className="bg-linear-to-r from-green-600 to-teal-600 rounded-lg p-8 text-white shadow-lg">
         <h1 className="text-4xl font-bold mb-2">Welcome Student</h1>
@@ -230,7 +210,7 @@ export const StudentDashboard = () => {
           </div>
         </div>
       </div>
-    </div>
+    </Container>
   );
 };
 

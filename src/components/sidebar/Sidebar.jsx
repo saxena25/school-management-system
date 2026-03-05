@@ -10,6 +10,9 @@ import {
   GraduationCap,
   Briefcase,
   TrendingUp,
+  Clock,
+  DollarSign,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -36,6 +39,16 @@ export const Sidebar = ({ isOpen, onClose }) => {
       { label: 'Students', href: '/dashboard/students', icon: GraduationCap },
       { label: 'Classes', href: '/dashboard/classes', icon: Users },
       { label: 'Analytics', href: '/dashboard/analytics', icon: TrendingUp },
+      { label: 'Settings', href: '/dashboard/settings', icon: Settings },
+    ],
+    admin: [
+      { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Timetable', href: '/dashboard/timetable', icon: Clock },
+      { label: 'Exam DateSheet', href: '/dashboard/exams', icon: FileText },
+      { label: 'Students', href: '/dashboard/students-admin', icon: GraduationCap },
+      { label: 'Teachers', href: '/dashboard/teachers', icon: Briefcase },
+      { label: 'Fee Tracking', href: '/dashboard/fees', icon: DollarSign },
+      { label: 'Profiles', href: '/dashboard/profiles', icon: Users },
       { label: 'Settings', href: '/dashboard/settings', icon: Settings },
     ],
   };

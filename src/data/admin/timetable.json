@@ -1,0 +1,17 @@
+{
+  "classes": ["8A","8B","9A","9B","10A","10B","11A","11B","12A","12B"],
+  "subjects": ["Mathematics","English","Science","History","Geography","Sports","Hindi","Computer Science"],
+  "teachers": ["Mr. Kumar","Ms. Sharma","Mr. Patel","Mr. Singh","Coach Verma","Ms. Gupta","Mr. Desai"],
+  "timetables": {
+    "10A": {
+      "monday": [
+        { "id": 1, "time": "9:00-10:00", "subject": "Mathematics", "teacher": "Mr. Kumar" },
+        { "id": 2, "time": "10:00-11:00", "subject": "English", "teacher": "Ms. Sharma" }
+      ],
+      "tuesday": [],
+      "wednesday": [],
+      "thursday": [],
+      "friday": []
+    }
+  }
+}

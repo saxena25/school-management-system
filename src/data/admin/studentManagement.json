@@ -1,0 +1,6 @@
+{
+  "students": [
+    { "id": 1, "name": "Rahul Singh", "email": "rahul@school.com", "class": "10A", "rollNo": "01", "phone": "9876543210", "address": "Delhi", "admissionDate": "2024-04-15" }
+  ],
+  "classes": ["8A","8B","9A","9B","10A","10B","11A","11B","12A","12B"]
+}

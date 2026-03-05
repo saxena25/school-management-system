@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Users,
   BookOpen,
@@ -9,24 +9,10 @@ import {
 } from 'lucide-react';
 import StatCard from '../../components/StatCard';
 import Container from '../../components/ui-components/container';
+import dashboardData from '../../data/principalDashboard.json';
 
 export const PrincipalDashboard = () => {
-  const [stats] = useState({
-    totalStudents: 1240,
-    totalTeachers: 85,
-    totalClasses: 42,
-    averageAttendance: 92,
-    passRate: 88,
-    eventsUpcoming: 5,
-  });
-
-  const chartData = [
-    { label: 'Class A', value: 45, pass: 42, fail: 3 },
-    { label: 'Class B', value: 48, pass: 45, fail: 3 },
-    { label: 'Class C', value: 42, pass: 38, fail: 4 },
-    { label: 'Class D', value: 40, pass: 36, fail: 4 },
-    { label: 'Class E', value: 38, pass: 34, fail: 4 },
-  ];
+  const { stats, chartData, recentActivities, alerts } = dashboardData;
 
   return (
     <Container className={"py-6"}>
@@ -142,12 +128,7 @@ export const PrincipalDashboard = () => {
           <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
             <h2 className="text-lg font-bold text-gray-800 mb-4">Recent Activities</h2>
             <div className="space-y-3">
-              {[
-                { title: 'New admission', time: '2 hours ago' },
-                { title: 'Fee payment received', time: '4 hours ago' },
-                { title: 'Staff meeting completed', time: '1 day ago' },
-                { title: 'Exam scheduled', time: '2 days ago' },
-              ].map((activity, idx) => (
+              {recentActivities.map((activity, idx) => (
                 <div
                   key={idx}
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
@@ -163,12 +144,7 @@ export const PrincipalDashboard = () => {
           <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
             <h2 className="text-lg font-bold text-gray-800 mb-4">Important Alerts</h2>
             <div className="space-y-3">
-              {[
-                { message: 'Low attendance in Class C', severity: 'high' },
-                { message: 'Exam materials ready for printing', severity: 'medium' },
-                { message: 'Teacher training session tomorrow', severity: 'low' },
-                { message: 'Budget allocation pending', severity: 'high' },
-              ].map((alert, idx) => {
+              {alerts.map((alert, idx) => {
                 const severityColors = {
                   high: 'bg-red-50 border-red-200 text-red-700',
                   medium: 'bg-yellow-50 border-yellow-200 text-yellow-700',

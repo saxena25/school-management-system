@@ -1,0 +1,6 @@
+{
+  "students": [
+    { "id": 1, "name": "Rahul Singh", "class": "10A", "tuitionFee": 50000, "tuitionPaid": 50000, "uniforms": 5000, "uniformsPaid": 0, "books": 3000, "booksPaid": 3000, "totalPaid": 53000, "totalDue": 5000, "lastPaymentDate": "2026-02-15", "status": "partial" }
+  ],
+  "classes": ["8A","8B","9A","9B","10A","10B","11A","11B","12A","12B"]
+}
