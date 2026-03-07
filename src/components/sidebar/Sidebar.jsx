@@ -13,6 +13,7 @@ import {
   Clock,
   DollarSign,
   FileText,
+  Brain,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -23,12 +24,15 @@ export const Sidebar = ({ isOpen, onClose }) => {
   const navigationItems = {
     student: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Timetable', href: '/dashboard/timetable', icon: Clock },
       { label: 'Courses', href: '/dashboard/courses', icon: BookOpen },
+      { label: 'Knowledge Checks', href: '/dashboard/knowledge-checks-student', icon: Brain },
       { label: 'My Grades', href: '/dashboard/grades', icon: BarChart3 },
     ],
     teacher: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
       { label: 'Classes', href: '/dashboard/classes', icon: Users },
+      { label: 'Knowledge Checks', href: '/dashboard/knowledge-checks', icon: Brain },
       { label: 'Assignments', href: '/dashboard/assignments', icon: BookOpen },
       { label: 'Grades', href: '/dashboard/grades', icon: BarChart3 },
       { label: 'Analytics', href: '/dashboard/analytics', icon: TrendingUp },

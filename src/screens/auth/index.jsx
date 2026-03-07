@@ -12,17 +12,9 @@ function Auth() {
   const { login } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('student');
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const roles = [
-    { id: 'student', label: 'Student', icon: '👨‍🎓' },
-    { id: 'teacher', label: 'Teacher', icon: '👨‍🏫' },
-    { id: 'principal', label: 'Principal', icon: '👔' },
-    { id: 'admin', label: 'Admin', icon: '⚙️' },
-  ];
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -46,10 +38,27 @@ function Auth() {
       return;
     }
 
+    // Determine role from email
+    let role;
+    const emailPrefix = formData.email.split('@')[0];
+    if (emailPrefix === 'student') {
+      role = 'student';
+    } else if (emailPrefix === 'teacher') {
+      role = 'teacher';
+    } else if (emailPrefix === 'principal') {
+      role = 'principal';
+    } else if (emailPrefix === 'admin') {
+      role = 'admin';
+    } else {
+      setError('Invalid email. Use format: role@school.com');
+      setLoading(false);
+      return;
+    }
+
     // Simulate API call
     setTimeout(() => {
       try {
-        login(formData.email, formData.password, selectedRole);
+        login(formData.email, formData.password, role);
         navigate('/dashboard');
       } catch (err) {
         setError('Login failed. Please try again.');
@@ -68,29 +77,6 @@ function Auth() {
           </div>
           <h2 className="text-3xl font-bold text-gray-800">EduMS</h2>
           <p className="text-gray-600 text-sm mt-1">School Management System</p>
-        </div>
-
-        {/* Role Selection */}
-        <div className="mb-6">
-          <label className="block text-sm font-semibold text-gray-700 mb-3">
-            Login As:
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            {roles.map((role) => (
-              <button
-                key={role.id}
-                onClick={() => setSelectedRole(role.id)}
-                className={`py-2 rounded-lg font-medium transition-all text-sm ${
-                  selectedRole === role.id
-                    ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-300'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <div className="text-lg mb-1">{role.icon}</div>
-                {role.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Error Message */}
@@ -144,7 +130,10 @@ function Auth() {
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-blue-900 text-xs font-medium mb-2">Demo Credentials:</p>
             <p className="text-blue-800 text-xs">
-              Email: demo@school.com<br />
+              Student: student@school.com<br />
+              Teacher: teacher@school.com<br />
+              Principal: principal@school.com<br />
+              Admin: admin@school.com<br />
               Password: demo123
             </p>
           </div>
@@ -159,8 +148,8 @@ function Auth() {
         </form>
 
         <div className="mt-6 text-center text-gray-600 text-sm">
-          <p>For demo purposes, any email/password combination works</p>
-          <p className="mt-2">Select your role and login to access the dashboard</p>
+          <p>Use the demo credentials above to login</p>
+          <p className="mt-2">The role is determined by the email prefix</p>
         </div>
       </div>
     </div>
