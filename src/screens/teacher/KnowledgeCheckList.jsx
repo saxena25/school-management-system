@@ -10,12 +10,14 @@ import {
   ChevronRight,
   Search
 } from 'lucide-react';
-import { useKnowledgeCheck } from '../../contexts/KnowledgeCheckContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { deleteKnowledgeCheck } from '../../store/knowledgeCheckSlice';
 import Container from '../../components/ui-components/container';
 
 export const TeacherKnowledgeCheckList = () => {
   const navigate = useNavigate();
-  const { knowledgeChecks, deleteKnowledgeCheck } = useKnowledgeCheck();
+  const dispatch = useDispatch();
+  const knowledgeChecks = useSelector((state) => state.knowledgeCheck.knowledgeChecks);
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredKnowledgeChecks = knowledgeChecks.filter(kc =>
@@ -25,7 +27,7 @@ export const TeacherKnowledgeCheckList = () => {
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this KnowledgeCheck?')) {
-      deleteKnowledgeCheck(id);
+      dispatch(deleteKnowledgeCheck(id));
     }
   };
 

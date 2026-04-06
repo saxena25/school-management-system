@@ -7,20 +7,24 @@ import {
   BarChart3,
   Calendar
 } from 'lucide-react';
-import { useKnowledgeCheck } from '../../contexts/KnowledgeCheckContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useSelector } from 'react-redux';
 import Container from '../../components/ui-components/container';
 
 export const StudentKnowledgeCheckList = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { getKnowledgeChecksForClass, getStudentAttempts } = useKnowledgeCheck();
-
-  // Student class - in real app, this would come from user profile
+  const user = useSelector((state) => state.auth.user);
+  const knowledgeChecks = useSelector((state) => state.knowledgeCheck.knowledgeChecks);
+  const studentAttempts = useSelector((state) => state.knowledgeCheck.studentAttempts);
   const studentClass = '10A';
   const studentId = user?.email;
 
-  const availableKnowledgeChecks = getKnowledgeChecksForClass(studentClass);
+  const availableKnowledgeChecks = knowledgeChecks.filter((kc) =>
+    kc.attachedClasses.includes(studentClass)
+  );
+
+  const getStudentAttempts = (kcId) => {
+    return studentAttempts.filter((a) => a.knowledgeCheckId === kcId && a.studentId === studentId);
+  };
 
   const getAttemptStats = (kcId) => {
     const attempts = getStudentAttempts(kcId, studentId);

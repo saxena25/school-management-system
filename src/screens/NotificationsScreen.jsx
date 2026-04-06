@@ -13,21 +13,26 @@ import {
   Library,
   X
 } from 'lucide-react';
-// import { useNotifications } from '../../contexts/NotificationsContext';
-import { useNotifications } from '../contexts/NotificationsContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { markAsRead, markAllAsRead } from '../store/notificationsSlice';
 import Container from '../components/ui-components/container';
 
 export const NotificationsScreen = () => {
-  const {
-    notifications,
-    markAsRead,
-    markAllAsRead,
-    getNotificationsByType,
-    getNotificationTypes
-  } = useNotifications();
+  const dispatch = useDispatch();
+  const notifications = useSelector((state) => state.notifications.notifications);
 
   const [selectedType, setSelectedType] = useState('all');
   const [showRead, setShowRead] = useState(true);
+
+  const getNotificationsByType = (type) => {
+    if (type === 'all') return notifications;
+    return notifications.filter((n) => n.type === type);
+  };
+
+  const getNotificationTypes = () => {
+    const types = [...new Set(notifications.map((n) => n.type))];
+    return types;
+  };
 
   const notificationTypes = getNotificationTypes();
   const filteredNotifications = getNotificationsByType(selectedType)
@@ -135,7 +140,7 @@ export const NotificationsScreen = () => {
           {/* Actions */}
           <div className="flex gap-2">
             <button
-              onClick={markAllAsRead}
+              onClick={() => dispatch(markAllAsRead())}
               className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
             >
               <CheckCircle2 className="w-4 h-4" />
@@ -209,7 +214,7 @@ export const NotificationsScreen = () => {
                         {/* Mark as Read Button */}
                         {!notification.read && (
                           <button
-                            onClick={() => markAsRead(notification.id)}
+                            onClick={() => dispatch(markAsRead(notification.id))}
                             className="ml-4 p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
                             title="Mark as read"
                           >

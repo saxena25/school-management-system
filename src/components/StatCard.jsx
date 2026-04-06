@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 export const StatCard = ({
@@ -25,7 +26,13 @@ export const StatCard = ({
   };
 
   return (
-    <div className={`${bgColor} rounded-lg border ${borderColor} p-6 shadow-sm hover:shadow-md transition-shadow`}>
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4, scale: 1.01 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      className={`${bgColor} rounded-lg border ${borderColor} p-6 shadow-sm hover:shadow-md transition-shadow`}
+    >
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-gray-600 text-sm font-medium mb-2">{title}</p>
@@ -42,7 +49,7 @@ export const StatCard = ({
           <span className={`text-sm font-semibold ${getTrendColor()}`}>{trendValue}</span>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 

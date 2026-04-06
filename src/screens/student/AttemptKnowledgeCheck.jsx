@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
-import { useKnowledgeCheck } from '../../contexts/KnowledgeCheckContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { submitAttempt, calculateScore } from '../../store/knowledgeCheckSlice';
 import Container from '../../components/ui-components/container';
 
 export const AttemptKnowledgeCheck = () => {
   const navigate = useNavigate();
   const { id: kcId } = useParams();
-  const { user } = useAuth();
-  const { knowledgeChecks, submitAttempt, calculateScore } = useKnowledgeCheck();
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user);
+  const knowledgeChecks = useSelector((state) => state.knowledgeCheck.knowledgeChecks);
 
-  const knowledgeCheck = knowledgeChecks.find(kc => kc.id === parseInt(kcId));
+  const knowledgeCheck = knowledgeChecks.find((kc) => kc.id === parseInt(kcId));
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
@@ -88,17 +89,17 @@ export const AttemptKnowledgeCheck = () => {
     setScore(calculatedScore);
 
     // Submit attempt
-    submitAttempt({
+    dispatch(submitAttempt({
       studentId: user?.email,
       studentName: user?.name,
       knowledgeCheckId: knowledgeCheck.id,
-      answers: knowledgeCheck.questions.map(q => ({
+      answers: knowledgeCheck.questions.map((q) => ({
         questionId: q.id,
         selectedOptions: answers[q.id] || []
       })),
       score: calculatedScore,
       totalQuestions: knowledgeCheck.questions.length
-    });
+    }));
 
     setSubmitted(true);
     setShowResults(true);

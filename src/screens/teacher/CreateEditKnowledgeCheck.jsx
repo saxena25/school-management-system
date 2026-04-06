@@ -9,7 +9,8 @@ import {
   Save,
   X
 } from 'lucide-react';
-import { useKnowledgeCheck } from '../../contexts/KnowledgeCheckContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { createKnowledgeCheck, updateKnowledgeCheck } from '../../store/knowledgeCheckSlice';
 import Container from '../../components/ui-components/container';
 
 const QUESTION_TYPES = [
@@ -23,9 +24,10 @@ const CLASSES = ['8A', '8B', '9A', '9B', '10A', '10B', '11A', '11B', '12A', '12B
 export const CreateEditKnowledgeCheck = () => {
   const navigate = useNavigate();
   const { id: kcId } = useParams();
-  const { knowledgeChecks, createKnowledgeCheck, updateKnowledgeCheck } = useKnowledgeCheck();
+  const dispatch = useDispatch();
+  const knowledgeChecks = useSelector((state) => state.knowledgeCheck.knowledgeChecks);
 
-  const existingKc = kcId ? knowledgeChecks.find(kc => kc.id === parseInt(kcId)) : null;
+  const existingKc = kcId ? knowledgeChecks.find((kc) => kc.id === parseInt(kcId)) : null;
 
   const [formData, setFormData] = useState({
     title: existingKc?.title || '',
@@ -203,9 +205,9 @@ export const CreateEditKnowledgeCheck = () => {
     }
 
     if (existingKc) {
-      updateKnowledgeCheck(existingKc.id, formData);
+      dispatch(updateKnowledgeCheck({ id: existingKc.id, data: formData }));
     } else {
-      createKnowledgeCheck(formData);
+      dispatch(createKnowledgeCheck(formData));
     }
 
     navigate('/dashboard/knowledge-checks');
