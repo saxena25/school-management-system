@@ -1,15 +1,17 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, Edit2, Trash2 } from 'lucide-react';
-import { useKnowledgeCheck } from '../../contexts/KnowledgeCheckContext';
+import { deleteKnowledgeCheck } from '../../store/knowledgeCheckSlice';
 import Container from '../../components/ui-components/container';
 
 export const ViewKnowledgeCheck = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { id: kcId } = useParams();
-  const { knowledgeChecks, deleteKnowledgeCheck } = useKnowledgeCheck();
+  const knowledgeChecks = useSelector((state) => state.knowledgeCheck.knowledgeChecks);
 
-  const knowledgeCheck = knowledgeChecks.find(kc => kc.id === parseInt(kcId));
+  const knowledgeCheck = knowledgeChecks.find((kc) => kc.id === parseInt(kcId));
 
   if (!knowledgeCheck) {
     return (
@@ -31,7 +33,7 @@ export const ViewKnowledgeCheck = () => {
 
   const handleDelete = () => {
     if (window.confirm('Are you sure you want to delete this Knowledge Check?')) {
-      deleteKnowledgeCheck(knowledgeCheck.id);
+      dispatch(deleteKnowledgeCheck(knowledgeCheck.id));
       navigate('/dashboard/knowledge-checks');
     }
   };

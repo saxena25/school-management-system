@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -15,10 +16,12 @@ import {
   FileText,
   Brain,
 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout } from '../../store/authSlice';
 
 export const Sidebar = ({ isOpen, onClose }) => {
-  const { user, logout } = useAuth();
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user);
   const location = useLocation();
 
   const navigationItems = {
@@ -60,7 +63,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
   const items = navigationItems[user?.role] || [];
 
   const handleLogout = () => {
-    logout();
+    dispatch(logout());
     window.location.href = '/';
   };
 
@@ -100,19 +103,25 @@ export const Sidebar = ({ isOpen, onClose }) => {
               const Icon = item.icon;
               const active = isActive(item.href);
               return (
-                <Link
+                <motion.div
                   key={item.href}
-                  to={item.href}
-                  onClick={onClose}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                    active
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                  }`}
+                  whileHover={{ x: 4 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                  className="rounded-lg"
                 >
-                  <Icon size={20} />
-                  <span className="font-medium">{item.label}</span>
-                </Link>
+                  <Link
+                    to={item.href}
+                    onClick={onClose}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                      active
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                    }`}
+                  >
+                    <Icon size={20} />
+                    <span className="font-medium">{item.label}</span>
+                  </Link>
+                </motion.div>
               );
             })}
           </nav>

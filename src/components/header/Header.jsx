@@ -1,20 +1,25 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { LogOut, Menu, X, Bell, User, ChevronRight } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useNotifications } from '../../contexts/NotificationsContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout } from '../../store/authSlice';
+import { markAsRead } from '../../store/notificationsSlice';
 import { useNavigate } from 'react-router-dom';
 import Container from '../ui-components/container';
 
 export const Header = ({ onSidebarToggle, sidebarOpen }) => {
-  const { user, logout } = useAuth();
-  const { unreadCount, getRecentNotifications, markAsRead } = useNotifications();
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user);
+  const notifications = useSelector((state) => state.notifications.notifications);
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  const recentNotifications = [...notifications]
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+    .slice(0, 5);
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const [notificationsOpen, setNotificationsOpen] = React.useState(false);
   const notificationsRef = React.useRef(null);
   const dropdownRef = React.useRef(null);
-
-  const recentNotifications = getRecentNotifications(5);
 
   // Close popovers when clicking outside
   React.useEffect(() => {
@@ -32,7 +37,7 @@ export const Header = ({ onSidebarToggle, sidebarOpen }) => {
   }, []);
 
   const handleLogout = () => {
-    logout();
+    dispatch(logout());
     window.location.href = '/';
   };
 
@@ -79,7 +84,13 @@ export const Header = ({ onSidebarToggle, sidebarOpen }) => {
 
             {/* Notifications Popover */}
             {notificationsOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
+              >
                 <div className="px-4 py-3 border-b border-gray-200">
                   <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
                   <p className="text-xs text-gray-600">{unreadCount} unread</p>
@@ -98,7 +109,7 @@ export const Header = ({ onSidebarToggle, sidebarOpen }) => {
                           !notification.read ? 'bg-blue-50' : ''
                         }`}
                         onClick={() => {
-                          markAsRead(notification.id);
+                          dispatch(markAsRead(notification.id));
                           setNotificationsOpen(false);
                         }}
                       >
@@ -137,7 +148,7 @@ export const Header = ({ onSidebarToggle, sidebarOpen }) => {
                     <ChevronRight size={16} />
                   </button>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
 
@@ -162,7 +173,13 @@ export const Header = ({ onSidebarToggle, sidebarOpen }) => {
 
             {/* Dropdown Menu */}
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+                className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
+              >
                 <div className="px-4 py-2 border-b border-gray-200">
                   <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
                   <p className="text-xs text-gray-600">{user?.email}</p>
@@ -178,7 +195,7 @@ export const Header = ({ onSidebarToggle, sidebarOpen }) => {
                   <LogOut size={16} />
                   Logout
                 </button>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>

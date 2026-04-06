@@ -1,21 +1,14 @@
-import { useState } from 'react'
 import './App.css'
 import { RouterProvider } from 'react-router-dom'
+import { Provider } from 'react-redux'
 import { router } from './routes/mainRouter'
-import { AuthProvider } from './contexts/AuthContext'
-import { NotificationsProvider } from './contexts/NotificationsContext'
-import { KnowledgeCheckProvider } from './contexts/KnowledgeCheckContext'
+import { store } from './store/store'
 
 function App() {
-
   return (
-    <AuthProvider>
-      <NotificationsProvider>
-        <KnowledgeCheckProvider>
-          <RouterProvider router={router} />
-        </KnowledgeCheckProvider>
-      </NotificationsProvider>
-    </AuthProvider>
+    <Provider store={store}>
+      <RouterProvider router={router} />
+    </Provider>
   )
 }
 

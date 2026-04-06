@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { loginUser } from '../../store/authSlice';
 
 export async function authLoader(){
     return {}
@@ -9,82 +11,76 @@ export async function authLoader(){
 
 function Auth() {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const dispatch = useDispatch();
+  const authState = useSelector((state) => state.auth);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const loading = authState.loading;
+  const authError = authState.error;
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    
+
     // Validate form
     if (!formData.email || !formData.password) {
       setError('Please fill in all fields');
-      setLoading(false);
       return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       setError('Please enter a valid email address');
-      setLoading(false);
       return;
     }
 
-    // Determine role from email
-    let role;
-    const emailPrefix = formData.email.split('@')[0];
-    if (emailPrefix === 'student') {
-      role = 'student';
-    } else if (emailPrefix === 'teacher') {
-      role = 'teacher';
-    } else if (emailPrefix === 'principal') {
-      role = 'principal';
-    } else if (emailPrefix === 'admin') {
-      role = 'admin';
-    } else {
-      setError('Invalid email. Use format: role@school.com');
-      setLoading(false);
-      return;
+    try {
+      await dispatch(loginUser({ email: formData.email, password: formData.password })).unwrap();
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err || 'Login failed. Please try again.');
     }
-
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        login(formData.email, formData.password, role);
-        navigate('/dashboard');
-      } catch (err) {
-        setError('Login failed. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    }, 500);
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen w-full ">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 p-8">
+    <div className="flex items-center justify-center min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-sky-50">
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 p-8"
+      >
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            className="flex justify-center mb-4"
+          >
             <Shield className="w-12 h-12 text-blue-600" />
-          </div>
+          </motion.div>
           <h2 className="text-3xl font-bold text-gray-800">EduMS</h2>
           <p className="text-gray-600 text-sm mt-1">School Management System</p>
         </div>
 
         {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-700 text-sm font-medium">{error}</p>
-          </div>
-        )}
+        <AnimatePresence>
+          {(error || authError) && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg"
+            >
+              <p className="text-red-700 text-sm font-medium">{error || authError}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Email Field */}
@@ -138,20 +134,23 @@ function Auth() {
             </p>
           </div>
 
-          <button
+          <motion.button
             type="submit"
             disabled={loading}
+            whileHover={!loading ? { scale: 1.02 } : {}}
+            whileTap={!loading ? { scale: 0.98 } : {}}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 rounded-lg shadow-md transition-colors duration-200"
           >
             {loading ? 'Signing In...' : 'Sign In'}
-          </button>
+          </motion.button>
         </form>
 
         <div className="mt-6 text-center text-gray-600 text-sm">
           <p>Use the demo credentials above to login</p>
           <p className="mt-2">The role is determined by the email prefix</p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
