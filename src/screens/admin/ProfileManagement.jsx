@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Save, X, Edit2, Upload } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import Container from '../../components/ui-components/container';
+import data from '../../data/admin/profileManagement.json';
 
 export const ProfileManagement = () => {
   const user = useSelector((state) => state.auth.user);
-  const data = require('../../data/admin/profileManagement.json');
+  // const data = require('../../data/admin/profileManagement.json');
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     name: user?.name || data.userProfile.name,
