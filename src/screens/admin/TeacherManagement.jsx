@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Edit2, Save, X, Search } from 'lucide-react';
 import Container from '../../components/ui-components/container';
+import teacherData from '../../data/admin/teacherManagement.json';
 
 export const TeacherManagement = () => {
-  const data = require('../../data/admin/teacherManagement.json');
-  const [teachers, setTeachers] = useState(data.teachers);
+  const [teachers, setTeachers] = useState(() => teacherData.teachers);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [editingTeacher, setEditingTeacher] = useState(null);
@@ -19,8 +19,8 @@ export const TeacherManagement = () => {
   });
   const [showForm, setShowForm] = useState(false);
 
-  const subjects = data.subjects;
-  const classes = data.classes;
+  const subjects = teacherData.subjects;
+  const classes = teacherData.classes;
 
   const filteredTeachers = teachers.filter(teacher =>
     teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

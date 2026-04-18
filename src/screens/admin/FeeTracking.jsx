@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { DollarSign, AlertCircle, CheckCircle2, Clock, Trash2, Edit2, Save, X, Search, Download } from 'lucide-react';
 import Container from '../../components/ui-components/container';
+import studentsData from '../../data/admin/feeTracking.json';
 
 export const FeeTracking = () => {
-  const [students, setStudents] = useState(() => require('../../data/admin/feeTracking.json').students);
+  const [students, setStudents] = useState(() => studentsData.students);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
@@ -11,7 +12,7 @@ export const FeeTracking = () => {
   const [editingStudent, setEditingStudent] = useState(null);
   const [sortBy, setSortBy] = useState('name');
 
-  const classes = require('../../data/admin/feeTracking.json').classes;
+  const classes = studentsData.classes;
 
   const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase());

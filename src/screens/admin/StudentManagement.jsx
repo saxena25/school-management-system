@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Edit2, Save, X, Search } from 'lucide-react';
 import Container from '../../components/ui-components/container';
+import studentData from '../../data/admin/studentManagement.json';
 
 export const StudentManagement = () => {
-  const [students, setStudents] = useState(() => require('../../data/admin/studentManagement.json').students);
-
+  const [students, setStudents] = useState(() => studentData.students);
+  const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClass, setFilterClass] = useState('All');
   const [editingStudent, setEditingStudent] = useState(null);
@@ -17,7 +18,7 @@ export const StudentManagement = () => {
     address: '',
     admissionDate: new Date().toISOString().split('T')[0],
   });
-  const classes = require('../../data/admin/studentManagement.json').classes;
+  const classes = studentData.classes;
 
   const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
