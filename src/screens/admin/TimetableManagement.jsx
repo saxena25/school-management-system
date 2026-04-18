@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GripHorizontal, Trash2, Plus, Save, AlertCircle } from 'lucide-react';
+import { GripHorizontal, Trash2, Plus, Save, Download, AlertCircle } from 'lucide-react';
 import Container from '../../components/ui-components/container';
 import timetableData from '../../data/admin/timetable.json';
 
@@ -86,6 +86,34 @@ export const TimetableManagement = () => {
     }));
   };
 
+  const handleExportTimetable = () => {
+    const classTimetable = timetable[selectedClass] || {};
+    const rows = dayKey.flatMap((day, dayIndex) =>
+      (classTimetable[day] || []).map(slot => [
+        days[dayIndex],
+        slot.time,
+        slot.subject,
+        slot.teacher,
+      ])
+    );
+
+    const xmlRows = rows.map(row =>
+      `<Row>${row.map(value => `<Cell><Data ss:Type="String">${String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</Data></Cell>`).join('')}</Row>`
+    ).join('');
+
+    const xmlContent = `<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n  <Worksheet ss:Name="${selectedClass}">\n    <Table>\n      <Row>\n        <Cell><Data ss:Type="String">Day</Data></Cell>\n        <Cell><Data ss:Type="String">Time</Data></Cell>\n        <Cell><Data ss:Type="String">Subject</Data></Cell>\n        <Cell><Data ss:Type="String">Teacher</Data></Cell>\n      </Row>\n      ${xmlRows}\n    </Table>\n  </Worksheet>\n</Workbook>`;
+
+    const blob = new Blob([xmlContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${selectedClass}-timetable.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleCreateNewClass = (className) => {
     if (!timetable[className]) {
       setTimetable(prev => ({
@@ -104,15 +132,24 @@ export const TimetableManagement = () => {
 
   return (
     <Container className="space-y-6 py-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Timetable Management</h1>
           <p className="text-gray-600 mt-1">Create and manage class timetables with drag-and-drop</p>
         </div>
-        <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition">
-          <Save className="w-4 h-4" />
-          Save All
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExportTimetable}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition hover:cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            Export Timetable
+          </button>
+          <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition hover:cursor-pointer">
+            <Save className="w-4 h-4" />
+            Save All
+          </button>
+        </div>
       </div>
 
       {/* Class Selection */}
@@ -123,7 +160,7 @@ export const TimetableManagement = () => {
             <button
               key={className}
               onClick={() => handleCreateNewClass(className) || setSelectedClass(className)}
-              className={`py-2 px-3 rounded-lg font-medium transition ${
+              className={`py-2 px-3 rounded-lg font-medium transition hover:cursor-pointer ${
                 selectedClass === className
                   ? 'bg-blue-600 text-white shadow-lg'
                   : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
@@ -171,7 +208,7 @@ export const TimetableManagement = () => {
                     onDragStart={(e) => handleDragStart(e, slot, day)}
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, day)}
-                    className="bg-white border-2 border-gray-300 rounded-lg p-3 cursor-move hover:shadow-lg transition"
+                    className="bg-white border-2 border-gray-300 rounded-lg p-3 cursor-grab hover:shadow-lg transition"
                   >
                     <div className="flex items-start gap-2 mb-2">
                       <GripHorizontal className="w-4 h-4 text-gray-400 shrink-0 mt-1" />
@@ -204,7 +241,7 @@ export const TimetableManagement = () => {
                       </div>
                       <button
                         onClick={() => handleDeleteSlot(day, slot.id)}
-                        className="text-red-600 hover:text-red-800 shrink-0 mt-1"
+                        className="text-red-600 hover:text-red-800 shrink-0 mt-1 hover:cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -213,7 +250,7 @@ export const TimetableManagement = () => {
                 ))}
                 <button
                   onClick={() => handleAddSlot(day)}
-                  className="w-full py-2 px-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-600 hover:text-blue-600 transition flex items-center justify-center gap-2"
+                  className="w-full py-2 px-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-600 hover:text-blue-600 transition flex items-center justify-center gap-2 hover:cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   Add Slot

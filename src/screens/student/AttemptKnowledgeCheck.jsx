@@ -79,7 +79,7 @@ export const AttemptKnowledgeCheck = () => {
 
     // Calculate score
     const calculatedScore = calculateScore(
-      knowledgeCheck.id,
+      knowledgeCheck,
       knowledgeCheck.questions.map(q => ({
         questionId: q.id,
         selectedOptions: answers[q.id] || []
