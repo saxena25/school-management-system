@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Users,
   BookOpen,
@@ -37,6 +38,8 @@ export const AdminDashboard = () => {
     { event: 'Parent-Teacher Meeting', date: 'Mar 20, 2026', type: 'meeting' },
   ];
 
+  const navigate = useNavigate();
+
   return (
     <Container className="space-y-6 py-6">
       {/* Welcome Section */}
@@ -49,50 +52,78 @@ export const AdminDashboard = () => {
 
       {/* Key Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Students"
-          value={stats.totalStudents}
-          subtitle="Active Students"
-          icon={Users}
-          trend="up"
-          trendValue="+15 this month"
-          bgColor="bg-green-50"
-          iconColor="text-green-600"
-          borderColor="border-green-200"
-        />
-        <StatCard
-          title="Total Teachers"
-          value={stats.totalTeachers}
-          subtitle="Active Staff"
-          icon={BookOpen}
-          trend="stable"
-          trendValue="All on board"
-          bgColor="bg-blue-50"
-          iconColor="text-blue-600"
-          borderColor="border-blue-200"
-        />
-        <StatCard
-          title="Classes"
-          value={stats.totalClasses}
-          subtitle="Total Classes"
-          icon={Clock}
-          trend="stable"
-          trendValue="All managed"
-          bgColor="bg-purple-50"
-          iconColor="text-purple-600"
-          borderColor="border-purple-200"
-        />
-        <StatCard
-          title="Fee Collection"
-          value="94%"
-          subtitle="Of Total"
-          icon={DollarSign}
-          trend="up"
-          trendValue="₹42.50L collected"
-          bgColor="bg-yellow-50"
-          iconColor="text-yellow-600"
-          borderColor="border-yellow-200"
-        />
+        <button
+          type="button"
+          onClick={() => navigate('/dashboard/students-admin')}
+          className="w-full text-left rounded-lg focus:outline-none hover:cursor-pointer"
+          aria-label="View student listing"
+        >
+          <StatCard
+            title="Total Students"
+            value={stats.totalStudents}
+            subtitle="Active Students"
+            icon={Users}
+            trend="up"
+            trendValue="+15 this month"
+            bgColor="bg-green-50"
+            iconColor="text-green-600"
+            borderColor="border-green-200"
+          />
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate('/dashboard/teachers')}
+          className="w-full text-left rounded-lg focus:outline-none hover:cursor-pointer"
+          aria-label="View teacher listing"
+        >
+          <StatCard
+            title="Total Teachers"
+            value={stats.totalTeachers}
+            subtitle="Active Staff"
+            icon={BookOpen}
+            trend="stable"
+            trendValue="All on board"
+            bgColor="bg-blue-50"
+            iconColor="text-blue-600"
+            borderColor="border-blue-200"
+          />
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate('/dashboard/timetable')}
+          className="w-full text-left rounded-lg focus:outline-none hover:cursor-pointer"
+          aria-label="View timetable management"
+        >
+          <StatCard
+            title="Classes"
+            value={stats.totalClasses}
+            subtitle="Total Classes"
+            icon={Clock}
+            trend="stable"
+            trendValue="All managed"
+            bgColor="bg-purple-50"
+            iconColor="text-purple-600"
+            borderColor="border-purple-200"
+          />
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate('/dashboard/fees')}
+          className="w-full text-left rounded-lg focus:outline-none hover:cursor-pointer"
+          aria-label="View fee tracking"
+        >
+          <StatCard
+            title="Fee Collection"
+            value="94%"
+            subtitle="Of Total"
+            icon={DollarSign}
+            trend="up"
+            trendValue="₹42.50L collected"
+            bgColor="bg-yellow-50"
+            iconColor="text-yellow-600"
+            borderColor="border-yellow-200"
+          />
+        </button>
       </div>
 
       {/* Fee Tracking & Pending Fees */}

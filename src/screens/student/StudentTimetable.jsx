@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Calendar } from 'lucide-react';
+import { Clock, Calendar, Download } from 'lucide-react';
 import Container from '../../components/ui-components/container';
 
 export const StudentTimetable = () => {
@@ -53,17 +53,64 @@ export const StudentTimetable = () => {
 
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
+  const handleExportTimetable = () => {
+    const rows = [];
+    Object.entries(timetable).forEach(([day, slots]) => {
+      slots.forEach(slot => {
+        rows.push([
+          day.charAt(0).toUpperCase() + day.slice(1),
+          slot.time,
+          slot.subject,
+          slot.teacher || '-',
+          slot.room || '-',
+        ]);
+      });
+    });
+
+    const xmlRows = rows.map(row =>
+      `<Row>${row.map(value => `<Cell><Data ss:Type="String">${String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')}
+      </Data></Cell>`).join('')}</Row>`
+    ).join('');
+
+    const xmlContent = `<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n  <Worksheet ss:Name="Student Timetable">\n    <Table>\n      <Row>\n        <Cell><Data ss:Type="String">Day</Data></Cell>\n        <Cell><Data ss:Type="String">Time</Data></Cell>\n        <Cell><Data ss:Type="String">Subject</Data></Cell>\n        <Cell><Data ss:Type="String">Teacher</Data></Cell>\n        <Cell><Data ss:Type="String">Room</Data></Cell>\n      </Row>\n      ${xmlRows}\n    </Table>\n  </Worksheet>\n</Workbook>`;
+
+    const blob = new Blob([xmlContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'student-timetable.xls');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Container className="space-y-6 py-6">
       {/* Header */}
       <div className="bg-linear-to-r from-blue-600 to-indigo-600 rounded-lg p-8 text-white shadow-lg">
-        <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-          <Calendar className="w-10 h-10" />
-          Weekly Timetable
-        </h1>
-        <p className="text-blue-100">
-          Class 10A - Academic Year 2025-2026
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
+              <Calendar className="w-10 h-10" />
+              Weekly Timetable
+            </h1>
+            <p className="text-blue-100">
+              Class 10A - Academic Year 2025-2026
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleExportTimetable}
+            className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition hover:cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            Download
+          </button>
+        </div>
       </div>
 
       {/* Timetable Grid */}

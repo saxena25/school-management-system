@@ -121,7 +121,7 @@ export const {
 } = knowledgeCheckSlice.actions;
 
 export const calculateScore = (knowledgeCheck, answers) => {
-  if (!knowledgeCheck) return 0;
+  if (!knowledgeCheck || !Array.isArray(knowledgeCheck.questions)) return 0;
 
   let correctCount = 0;
   knowledgeCheck.questions.forEach((question) => {

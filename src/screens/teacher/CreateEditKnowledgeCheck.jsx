@@ -19,8 +19,6 @@ const QUESTION_TYPES = [
   { value: 'yes-no', label: 'Yes/No' }
 ];
 
-const CLASSES = ['8A', '8B', '9A', '9B', '10A', '10B', '11A', '11B', '12A', '12B'];
-
 export const CreateEditKnowledgeCheck = () => {
   const navigate = useNavigate();
   const { id: kcId } = useParams();
@@ -32,7 +30,6 @@ export const CreateEditKnowledgeCheck = () => {
   const [formData, setFormData] = useState({
     title: existingKc?.title || '',
     description: existingKc?.description || '',
-    attachedClasses: existingKc?.attachedClasses || [],
     questions: existingKc?.questions || []
   });
 
@@ -45,13 +42,6 @@ export const CreateEditKnowledgeCheck = () => {
 
   const handleDescriptionChange = (e) => {
     setFormData({ ...formData, description: e.target.value });
-  };
-
-  const handleClassToggle = (className) => {
-    const newClasses = formData.attachedClasses.includes(className)
-      ? formData.attachedClasses.filter(c => c !== className)
-      : [...formData.attachedClasses, className];
-    setFormData({ ...formData, attachedClasses: newClasses });
   };
 
   const addQuestion = () => {
@@ -164,10 +154,6 @@ export const CreateEditKnowledgeCheck = () => {
       newErrors.description = 'Description is required';
     }
 
-    if (formData.attachedClasses.length === 0) {
-      newErrors.attachedClasses = 'Select at least one class';
-    }
-
     if (formData.questions.length === 0) {
       newErrors.questions = 'Add at least one question';
     } else {
@@ -271,27 +257,6 @@ export const CreateEditKnowledgeCheck = () => {
               <p className="text-red-600 text-sm mt-1">{errors.description}</p>
             )}
           </div>
-        </div>
-
-        {/* Attached Classes */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Attach to Classes</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {CLASSES.map(className => (
-              <label key={className} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.attachedClasses.includes(className)}
-                  onChange={() => handleClassToggle(className)}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-gray-700">{className}</span>
-              </label>
-            ))}
-          </div>
-          {errors.attachedClasses && (
-            <p className="text-red-600 text-sm">{errors.attachedClasses}</p>
-          )}
         </div>
 
         {/* Questions */}
