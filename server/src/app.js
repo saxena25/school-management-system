@@ -98,11 +98,20 @@ let readyPromise;
 export async function ensureReady() {
   if (!readyPromise) {
     readyPromise = (async () => {
-      const connection = await connectDB(process.env.MONGODB_URI);
-      if (process.env.SEED_ON_START === 'true' || connection.mode === 'memory') {
-        await seedDatabase({ force: connection.mode === 'memory' });
+      try {
+        const connection = await connectDB(process.env.MONGODB_URI);
+        // Seed only when explicitly enabled (recommended once on Atlas)
+        if (process.env.SEED_ON_START === 'true') {
+          await seedDatabase({ force: false });
+        } else if (connection.mode === 'memory') {
+          await seedDatabase({ force: true });
+        }
+        return connection;
+      } catch (error) {
+        // Allow a later invocation to retry after env/config fixes
+        readyPromise = null;
+        throw error;
       }
-      return connection;
     })();
   }
   return readyPromise;
