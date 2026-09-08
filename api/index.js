@@ -6,9 +6,36 @@ export const config = {
   },
 };
 
+function normalizeUrl(req) {
+  // Keep original path for Express mounts under /api/*
+  const original =
+    req.headers['x-forwarded-uri'] ||
+    req.headers['x-invoke-path'] ||
+    req.originalUrl ||
+    req.url ||
+    '/';
+
+  let path = String(original).split('?')[0];
+  const query = String(original).includes('?')
+    ? `?${String(original).split('?')[1]}`
+    : (req.url || '').includes('?')
+      ? `?${req.url.split('?')[1]}`
+      : '';
+
+  // Some Vercel routings deliver "/auth/login" instead of "/api/auth/login"
+  if (path === '/api' || path === '/api/index' || path === '/api/index.js') {
+    path = '/api';
+  } else if (!path.startsWith('/api')) {
+    path = `/api${path.startsWith('/') ? path : `/${path}`}`;
+  }
+
+  req.url = `${path}${query}`;
+}
+
 export default async function handler(req, res) {
   try {
     await ensureReady();
+    normalizeUrl(req);
     return app(req, res);
   } catch (error) {
     console.error('EduMS API bootstrap failed:', error);
