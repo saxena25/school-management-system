@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { authApi } from '../services/api';
 
 const loadStoredUser = () => {
   const storedUser = localStorage.getItem('user');
@@ -14,53 +15,52 @@ const loadStoredUser = () => {
 
 const initialState = {
   user: loadStoredUser(),
-  isAuthenticated: Boolean(loadStoredUser()),
+  token: localStorage.getItem('authToken'),
+  isAuthenticated: Boolean(localStorage.getItem('authToken') && loadStoredUser()),
   loading: false,
-  error: null
+  bootstrapping: Boolean(localStorage.getItem('authToken')),
+  error: null,
 };
 
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async ({ email, password }, thunkAPI) => {
-    const emailPrefix = email.split('@')[0];
-    let role;
-
-    if (emailPrefix === 'student') {
-      role = 'student';
-    } else if (emailPrefix === 'teacher') {
-      role = 'teacher';
-    } else if (emailPrefix === 'principal') {
-      role = 'principal';
-    } else if (emailPrefix === 'admin') {
-      role = 'admin';
+    try {
+      const data = await authApi.login({ email, password });
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      return data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
     }
+  }
+);
 
-    if (!role) {
-      return thunkAPI.rejectWithValue('Invalid email. Use format: role@school.com');
+export const fetchCurrentUser = createAsyncThunk(
+  'auth/fetchCurrentUser',
+  async (_, thunkAPI) => {
+    try {
+      const data = await authApi.me();
+      localStorage.setItem('user', JSON.stringify(data.user));
+      return data.user;
+    } catch (error) {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      return thunkAPI.rejectWithValue(error.message);
     }
+  }
+);
 
-    const userData = {
-      email,
-      role,
-      id: Math.random().toString(36).substr(2, 9),
-      name: email.split('@')[0],
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-      joinDate: new Date().toISOString()
-    };
-
-    if (role === 'admin') {
-      userData.permissions = [
-        'manage_timetable',
-        'manage_exams',
-        'manage_students',
-        'manage_teachers',
-        'manage_fees',
-        'manage_profiles'
-      ];
+export const updateProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (payload, thunkAPI) => {
+    try {
+      const data = await authApi.updateMe(payload);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      return data.user;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
     }
-
-    localStorage.setItem('user', JSON.stringify(userData));
-    return userData;
   }
 );
 
@@ -70,10 +70,13 @@ const authSlice = createSlice({
   reducers: {
     logout(state) {
       state.user = null;
+      state.token = null;
       state.isAuthenticated = false;
       state.error = null;
+      state.bootstrapping = false;
       localStorage.removeItem('user');
-    }
+      localStorage.removeItem('authToken');
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -82,15 +85,35 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
-        state.user = action.payload;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
         state.isAuthenticated = true;
         state.loading = false;
+        state.bootstrapping = false;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.error = action.payload || action.error.message;
         state.loading = false;
+        state.isAuthenticated = false;
+      })
+      .addCase(fetchCurrentUser.pending, (state) => {
+        state.bootstrapping = true;
+      })
+      .addCase(fetchCurrentUser.fulfilled, (state, action) => {
+        state.user = action.payload;
+        state.isAuthenticated = true;
+        state.bootstrapping = false;
+      })
+      .addCase(fetchCurrentUser.rejected, (state) => {
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        state.bootstrapping = false;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.user = action.payload;
       });
-  }
+  },
 });
 
 export const { logout } = authSlice.actions;

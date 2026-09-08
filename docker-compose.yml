@@ -1,0 +1,11 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: edums-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - edums_mongo_data:/data/db
+
+volumes:
+  edums_mongo_data:

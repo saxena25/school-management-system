@@ -10,7 +10,7 @@ import {
   X
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createKnowledgeCheck, updateKnowledgeCheck } from '../../store/knowledgeCheckSlice';
+import { createKnowledgeCheck, updateKnowledgeCheck, fetchKnowledgeChecks } from '../../store/knowledgeCheckSlice';
 import Container from '../../components/ui-components/container';
 
 const QUESTION_TYPES = [
@@ -25,7 +25,9 @@ export const CreateEditKnowledgeCheck = () => {
   const dispatch = useDispatch();
   const knowledgeChecks = useSelector((state) => state.knowledgeCheck.knowledgeChecks);
 
-  const existingKc = kcId ? knowledgeChecks.find((kc) => kc.id === parseInt(kcId)) : null;
+  const existingKc = kcId
+    ? knowledgeChecks.find((kc) => String(kc.id) === String(kcId))
+    : null;
 
   const [formData, setFormData] = useState({
     title: existingKc?.title || '',
@@ -36,6 +38,19 @@ export const CreateEditKnowledgeCheck = () => {
   const [expandedQuestion, setExpandedQuestion] = useState(null);
   const [errors, setErrors] = useState({});
 
+  useEffect(() => {
+    dispatch(fetchKnowledgeChecks());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (existingKc) {
+      setFormData({
+        title: existingKc.title || '',
+        description: existingKc.description || '',
+        questions: existingKc.questions || [],
+      });
+    }
+  }, [existingKc]);
   const handleTitleChange = (e) => {
     setFormData({ ...formData, title: e.target.value });
   };
@@ -182,7 +197,7 @@ export const CreateEditKnowledgeCheck = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -191,9 +206,9 @@ export const CreateEditKnowledgeCheck = () => {
     }
 
     if (existingKc) {
-      dispatch(updateKnowledgeCheck({ id: existingKc.id, data: formData }));
+      await dispatch(updateKnowledgeCheck({ id: existingKc.id, data: formData }));
     } else {
-      dispatch(createKnowledgeCheck(formData));
+      await dispatch(createKnowledgeCheck(formData));
     }
 
     navigate('/dashboard/knowledge-checks');

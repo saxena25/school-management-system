@@ -1,390 +1,308 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Plus, Trash2, Edit2, Save, X, Search } from 'lucide-react';
 import Container from '../../components/ui-components/container';
-import teacherData from '../../data/admin/teacherManagement.json';
+import { usersApi } from '../../services/api';
+
+const emptyTeacher = {
+  name: '',
+  email: '',
+  phone: '',
+  subjects: [],
+  classes: [],
+  qualifications: '',
+  joinDate: new Date().toISOString().split('T')[0],
+};
 
 export const TeacherManagement = () => {
-  const [teachers, setTeachers] = useState(() => teacherData.teachers);
-
+  const [teachers, setTeachers] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [classes, setClasses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingTeacher, setEditingTeacher] = useState(null);
-  const [newTeacher, setNewTeacher] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    subjects: [],
-    classes: [],
-    qualifications: '',
-    joinDate: new Date().toISOString().split('T')[0],
-  });
+  const [newTeacher, setNewTeacher] = useState(emptyTeacher);
   const [showForm, setShowForm] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const subjects = teacherData.subjects;
-  const classes = teacherData.classes;
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [usersData, meta] = await Promise.all([
+        usersApi.list({ role: 'teacher' }),
+        usersApi.meta(),
+      ]);
+      setTeachers(usersData.users || []);
+      setSubjects(meta.subjects || []);
+      setClasses(meta.classes || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filteredTeachers = teachers.filter(teacher =>
-    teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    teacher.email.toLowerCase().includes(searchTerm.toLowerCase())
+  useEffect(() => {
+    load();
+  }, []);
+
+  const filteredTeachers = teachers.filter(
+    (teacher) =>
+      teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      teacher.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddTeacher = () => {
+  const toggleInList = (list, value) =>
+    list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+
+  const handleAddTeacher = async () => {
     if (!newTeacher.name || !newTeacher.email || !newTeacher.phone) {
-      alert('Please fill all required fields');
+      setError('Please fill all required fields');
       return;
     }
-    const id = Math.max(...teachers.map(t => t.id), 0) + 1;
-    setTeachers([...teachers, { ...newTeacher, id }]);
-    setNewTeacher({
-      name: '',
-      email: '',
-      phone: '',
-      subjects: [],
-      classes: [],
-      qualifications: '',
-      joinDate: new Date().toISOString().split('T')[0],
-    });
-    setShowForm(false);
-  };
-
-  const handleUpdateTeacher = () => {
-    if (!editingTeacher.name || !editingTeacher.email || !editingTeacher.phone) {
-      alert('Please fill all required fields');
-      return;
-    }
-    setTeachers(teachers.map(t => t.id === editingTeacher.id ? editingTeacher : t));
-    setEditingTeacher(null);
-  };
-
-  const handleDeleteTeacher = (id) => {
-    if (window.confirm('Are you sure you want to delete this teacher?')) {
-      setTeachers(teachers.filter(t => t.id !== id));
+    try {
+      const data = await usersApi.createTeacher(newTeacher);
+      setTeachers((prev) => [data.user, ...prev]);
+      setNewTeacher(emptyTeacher);
+      setShowForm(false);
+      setError('');
+    } catch (err) {
+      setError(err.message);
     }
   };
 
-  const handleToggleSubject = (teacher, subject) => {
-    const subjects = teacher.subjects.includes(subject)
-      ? teacher.subjects.filter(s => s !== subject)
-      : [...teacher.subjects, subject];
-    return subjects;
+  const handleUpdateTeacher = async () => {
+    try {
+      const data = await usersApi.updateTeacher(editingTeacher.id, editingTeacher);
+      setTeachers((prev) =>
+        prev.map((t) => (t.id === data.user.id ? data.user : t))
+      );
+      setEditingTeacher(null);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
-  const handleToggleClass = (teacher, className) => {
-    const classes = teacher.classes.includes(className)
-      ? teacher.classes.filter(c => c !== className)
-      : [...teacher.classes, className];
-    return classes;
+  const handleDeleteTeacher = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this teacher?')) return;
+    try {
+      await usersApi.deleteTeacher(id);
+      setTeachers((prev) => prev.filter((t) => t.id !== id));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
     <Container className="space-y-6 py-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Teacher Management</h1>
-          <p className="text-gray-600 mt-1">Manage teachers and assign subjects/classes</p>
+          <p className="mt-1 text-gray-600">Create and assign teachers via API</p>
         </div>
-        <button
+        <motion.button
+          whileHover={{ scale: 1.03 }}
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition"
+          className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 font-medium text-white"
         >
-          <Plus className="w-4 h-4" />
-          Add Teacher
-        </button>
+          <Plus className="h-4 w-4" /> Add Teacher
+        </motion.button>
       </div>
 
-      {/* Search */}
-      <div className="bg-white rounded-lg p-6 shadow border border-gray-200">
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <div className="rounded-lg border bg-white p-4 shadow">
         <div className="relative">
-          <Search className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+          <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
           <input
-            type="text"
-            placeholder="Search by name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
+            placeholder="Search teachers..."
+            className="w-full rounded-lg border py-2 pl-10 pr-4"
           />
         </div>
       </div>
 
-      {/* Add Teacher Form */}
       {showForm && (
-        <div className="bg-white rounded-lg p-6 shadow border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Add New Teacher</h2>
-            <button
-              onClick={() => setShowForm(false)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <X className="w-6 h-6" />
-            </button>
+        <div className="space-y-3 rounded-lg border border-green-200 bg-green-50 p-6">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <input
+              placeholder="Name"
+              value={newTeacher.name}
+              onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })}
+              className="rounded border px-3 py-2"
+            />
+            <input
+              placeholder="Email"
+              value={newTeacher.email}
+              onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })}
+              className="rounded border px-3 py-2"
+            />
+            <input
+              placeholder="Phone"
+              value={newTeacher.phone}
+              onChange={(e) => setNewTeacher({ ...newTeacher, phone: e.target.value })}
+              className="rounded border px-3 py-2"
+            />
+            <input
+              placeholder="Qualifications"
+              value={newTeacher.qualifications}
+              onChange={(e) =>
+                setNewTeacher({ ...newTeacher, qualifications: e.target.value })
+              }
+              className="rounded border px-3 py-2 md:col-span-3"
+            />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-              <input
-                type="text"
-                value={newTeacher.name}
-                onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })}
-                placeholder="Full Name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-              <input
-                type="email"
-                value={newTeacher.email}
-                onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })}
-                placeholder="Email"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
-              <input
-                type="text"
-                value={newTeacher.phone}
-                onChange={(e) => setNewTeacher({ ...newTeacher, phone: e.target.value })}
-                placeholder="Phone"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Qualifications</label>
-              <input
-                type="text"
-                value={newTeacher.qualifications}
-                onChange={(e) => setNewTeacher({ ...newTeacher, qualifications: e.target.value })}
-                placeholder="e.g., B.Tech, M.Sc"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Join Date</label>
-              <input
-                type="date"
-                value={newTeacher.joinDate}
-                onChange={(e) => setNewTeacher({ ...newTeacher, joinDate: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-              />
-            </div>
+          <div className="flex flex-wrap gap-2">
+            {subjects.map((subject) => (
+              <button
+                key={subject}
+                type="button"
+                onClick={() =>
+                  setNewTeacher({
+                    ...newTeacher,
+                    subjects: toggleInList(newTeacher.subjects, subject),
+                  })
+                }
+                className={`rounded-full px-3 py-1 text-sm ${
+                  newTeacher.subjects.includes(subject)
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white border'
+                }`}
+              >
+                {subject}
+              </button>
+            ))}
           </div>
-
-          {/* Subjects Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Subjects</label>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
-              {subjects.map(subject => (
-                <label key={subject} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={newTeacher.subjects.includes(subject)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setNewTeacher({ ...newTeacher, subjects: [...newTeacher.subjects, subject] });
-                      } else {
-                        setNewTeacher({ ...newTeacher, subjects: newTeacher.subjects.filter(s => s !== subject) });
-                      }
-                    }}
-                    className="cursor-pointer"
-                  />
-                  <span className="text-sm text-gray-700">{subject}</span>
-                </label>
-              ))}
-            </div>
+          <div className="flex flex-wrap gap-2">
+            {classes.map((cls) => (
+              <button
+                key={cls}
+                type="button"
+                onClick={() =>
+                  setNewTeacher({
+                    ...newTeacher,
+                    classes: toggleInList(newTeacher.classes, cls),
+                  })
+                }
+                className={`rounded-full px-3 py-1 text-sm ${
+                  newTeacher.classes.includes(cls)
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-white border'
+                }`}
+              >
+                {cls}
+              </button>
+            ))}
           </div>
-
-          {/* Classes Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Classes</label>
-            <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-10 gap-2">
-              {classes.map(cls => (
-                <label key={cls} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={newTeacher.classes.includes(cls)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setNewTeacher({ ...newTeacher, classes: [...newTeacher.classes, cls] });
-                      } else {
-                        setNewTeacher({ ...newTeacher, classes: newTeacher.classes.filter(c => c !== cls) });
-                      }
-                    }}
-                    className="cursor-pointer"
-                  />
-                  <span className="text-sm text-gray-700">{cls}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
           <div className="flex gap-2">
             <button
               onClick={handleAddTeacher}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition"
+              className="rounded-lg bg-green-600 px-4 py-2 text-white"
             >
-              <Save className="w-4 h-4" />
-              Save
+              <Save className="mr-1 inline h-4 w-4" /> Save
             </button>
             <button
               onClick={() => setShowForm(false)}
-              className="flex items-center gap-2 bg-gray-300 hover:bg-gray-400 text-gray-900 px-4 py-2 rounded-lg font-medium transition"
+              className="rounded-lg bg-gray-200 px-4 py-2"
             >
-              <X className="w-4 h-4" />
               Cancel
             </button>
           </div>
         </div>
       )}
 
-      {/* Teachers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTeachers.map(teacher => (
-          <div key={teacher.id} className="bg-white rounded-lg p-6 shadow border border-gray-200">
-            {editingTeacher?.id === teacher.id ? (
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  value={editingTeacher.name}
-                  onChange={(e) => setEditingTeacher({ ...editingTeacher, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
-                  placeholder="Name"
-                />
-                <input
-                  type="email"
-                  value={editingTeacher.email}
-                  onChange={(e) => setEditingTeacher({ ...editingTeacher, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
-                  placeholder="Email"
-                />
-                <input
-                  type="text"
-                  value={editingTeacher.phone}
-                  onChange={(e) => setEditingTeacher({ ...editingTeacher, phone: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
-                  placeholder="Phone"
-                />
-                <input
-                  type="text"
-                  value={editingTeacher.qualifications}
-                  onChange={(e) => setEditingTeacher({ ...editingTeacher, qualifications: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
-                  placeholder="Qualifications"
-                />
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Subjects</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {subjects.map(subject => (
-                      <label key={subject} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={editingTeacher.subjects.includes(subject)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setEditingTeacher({ ...editingTeacher, subjects: [...editingTeacher.subjects, subject] });
-                            } else {
-                              setEditingTeacher({ ...editingTeacher, subjects: editingTeacher.subjects.filter(s => s !== subject) });
+      <div className="overflow-hidden rounded-lg border bg-white shadow">
+        {loading ? (
+          <div className="p-8 text-center text-gray-500">Loading teachers...</div>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="border-b bg-gray-50">
+                <th className="px-4 py-3 text-left">Name</th>
+                <th className="px-4 py-3 text-left">Email</th>
+                <th className="px-4 py-3 text-left">Subjects</th>
+                <th className="px-4 py-3 text-left">Classes</th>
+                <th className="px-4 py-3 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredTeachers.map((teacher) => (
+                <tr key={teacher.id} className="border-b hover:bg-gray-50">
+                  {editingTeacher?.id === teacher.id ? (
+                    <>
+                      <td className="px-4 py-3" colSpan={4}>
+                        <div className="grid gap-2 md:grid-cols-2">
+                          <input
+                            value={editingTeacher.name}
+                            onChange={(e) =>
+                              setEditingTeacher({
+                                ...editingTeacher,
+                                name: e.target.value,
+                              })
                             }
-                          }}
-                          className="cursor-pointer"
-                        />
-                        <span className="text-xs text-gray-700">{subject}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Classes</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {classes.map(cls => (
-                      <label key={cls} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={editingTeacher.classes.includes(cls)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setEditingTeacher({ ...editingTeacher, classes: [...editingTeacher.classes, cls] });
-                            } else {
-                              setEditingTeacher({ ...editingTeacher, classes: editingTeacher.classes.filter(c => c !== cls) });
+                            className="rounded border px-2 py-1"
+                          />
+                          <input
+                            value={editingTeacher.phone}
+                            onChange={(e) =>
+                              setEditingTeacher({
+                                ...editingTeacher,
+                                phone: e.target.value,
+                              })
                             }
-                          }}
-                          className="cursor-pointer"
-                        />
-                        <span className="text-xs text-gray-700">{cls}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleUpdateTeacher}
-                    className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-medium text-sm transition"
-                  >
-                    <Save className="w-4 h-4" />
-                    Save
-                  </button>
-                  <button
-                    onClick={() => setEditingTeacher(null)}
-                    className="flex-1 flex items-center justify-center gap-2 bg-gray-300 hover:bg-gray-400 text-gray-900 px-3 py-2 rounded-lg font-medium text-sm transition"
-                  >
-                    <X className="w-4 h-4" />
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900">{teacher.name}</h3>
-                  <button
-                    onClick={() => handleDeleteTeacher(teacher.id)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-                <p className="text-sm text-gray-600 mb-1">{teacher.email}</p>
-                <p className="text-sm text-gray-600 mb-3">{teacher.phone}</p>
-                <p className="text-sm text-gray-600 mb-3">
-                  <span className="font-medium">Qualifications:</span> {teacher.qualifications}
-                </p>
-                <div className="mb-3">
-                  <p className="text-sm font-medium text-gray-700 mb-1">Subjects:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {teacher.subjects.map(subject => (
-                      <span key={subject} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
-                        {subject}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="mb-4">
-                  <p className="text-sm font-medium text-gray-700 mb-1">Classes:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {teacher.classes.map(cls => (
-                      <span key={cls} className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">
-                        {cls}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <button
-                  onClick={() => setEditingTeacher(teacher)}
-                  className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium text-sm transition"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </button>
-              </>
-            )}
-          </div>
-        ))}
+                            className="rounded border px-2 py-1"
+                          />
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={handleUpdateTeacher}
+                          className="mr-2 text-green-600"
+                        >
+                          <Save className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => setEditingTeacher(null)}>
+                          <X className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-4 py-3">{teacher.name}</td>
+                      <td className="px-4 py-3">{teacher.email}</td>
+                      <td className="px-4 py-3 text-sm">
+                        {(teacher.subjects || []).join(', ')}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        {(teacher.classes || []).join(', ')}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => setEditingTeacher(teacher)}
+                          className="mr-2 text-blue-600"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTeacher(teacher.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
-
-      {filteredTeachers.length === 0 && (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-600">No teachers found</p>
-        </div>
-      )}
     </Container>
   );
 };

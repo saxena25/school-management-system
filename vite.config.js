@@ -16,9 +16,15 @@ export default defineConfig({
 	},
 	base: "/",
 
-	// Set your port back to 3000
 	server: {
 		open: true,
 		port: 3000,
+		strictPort: false,
+		proxy: {
+			'/api': {
+				target: 'http://localhost:5001',
+				changeOrigin: true,
+			},
+		},
 	},
 });

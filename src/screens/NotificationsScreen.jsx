@@ -37,7 +37,7 @@ export const NotificationsScreen = () => {
   const notificationTypes = getNotificationTypes();
   const filteredNotifications = getNotificationsByType(selectedType)
     .filter(notification => showRead || !notification.read)
-    .sort((a, b) => b.timestamp - a.timestamp);
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
   const getTypeIcon = (type) => {
     const icons = {

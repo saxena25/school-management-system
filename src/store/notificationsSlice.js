@@ -1,97 +1,74 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { notificationApi } from '../services/api';
 
 const initialState = {
-  notifications: [
-    {
-      id: 1,
-      title: 'Assignment Due',
-      message: 'Mathematics assignment is due tomorrow',
-      type: 'assignment',
-      read: false,
-      timestamp: new Date(Date.now() - 1000 * 60 * 30),
-      priority: 'high'
-    },
-    {
-      id: 2,
-      title: 'Exam Schedule',
-      message: 'Science exam scheduled for next week',
-      type: 'exam',
-      read: false,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-      priority: 'medium'
-    },
-    {
-      id: 3,
-      title: 'Grade Posted',
-      message: 'Your English grade has been posted',
-      type: 'grade',
-      read: true,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
-      priority: 'low'
-    },
-    {
-      id: 4,
-      title: 'Class Cancelled',
-      message: 'History class is cancelled today',
-      type: 'announcement',
-      read: false,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
-      priority: 'high'
-    },
-    {
-      id: 5,
-      title: 'Parent Meeting',
-      message: 'Parent-teacher meeting scheduled for Friday',
-      type: 'meeting',
-      read: false,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3),
-      priority: 'medium'
-    },
-    {
-      id: 6,
-      title: 'Fee Payment Reminder',
-      message: 'School fees payment is due',
-      type: 'fee',
-      read: true,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7),
-      priority: 'high'
-    },
-    {
-      id: 7,
-      title: 'Sports Event',
-      message: 'Annual sports day registration open',
-      type: 'event',
-      read: false,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10),
-      priority: 'low'
-    },
-    {
-      id: 8,
-      title: 'Library Book Due',
-      message: 'Your borrowed book is due tomorrow',
-      type: 'library',
-      read: false,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14),
-      priority: 'medium'
-    }
-  ]
+  notifications: [],
+  loading: false,
+  error: null,
 };
+
+export const fetchNotifications = createAsyncThunk(
+  'notifications/fetchAll',
+  async (_, thunkAPI) => {
+    try {
+      const data = await notificationApi.list();
+      return data.notifications;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+export const markAsRead = createAsyncThunk(
+  'notifications/markAsRead',
+  async (id, thunkAPI) => {
+    try {
+      const data = await notificationApi.markRead(id);
+      return data.notification;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+export const markAllAsRead = createAsyncThunk(
+  'notifications/markAllAsRead',
+  async (_, thunkAPI) => {
+    try {
+      const data = await notificationApi.markAllRead();
+      return data.notifications;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
 
 const notificationsSlice = createSlice({
   name: 'notifications',
   initialState,
-  reducers: {
-    markAsRead(state, action) {
-      const notification = state.notifications.find(n => n.id === action.payload);
-      if (notification) notification.read = true;
-    },
-    markAllAsRead(state) {
-      state.notifications.forEach((notification) => {
-        notification.read = true;
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchNotifications.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchNotifications.fulfilled, (state, action) => {
+        state.loading = false;
+        state.notifications = action.payload;
+      })
+      .addCase(fetchNotifications.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error.message;
+      })
+      .addCase(markAsRead.fulfilled, (state, action) => {
+        state.notifications = state.notifications.map((n) =>
+          n.id === action.payload.id ? action.payload : n
+        );
+      })
+      .addCase(markAllAsRead.fulfilled, (state, action) => {
+        state.notifications = action.payload;
       });
-    }
-  }
+  },
 });
 
-export const { markAsRead, markAllAsRead } = notificationsSlice.actions;
 export default notificationsSlice.reducer;

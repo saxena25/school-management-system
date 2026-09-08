@@ -1,64 +1,34 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Clock, Calendar, Download } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import Container from '../../components/ui-components/container';
+import { timetableApi } from '../../services/api';
+
+const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 export const StudentTimetable = () => {
-  // Mock timetable data for a student in class 10A
-  const timetable = {
-    monday: [
-      { time: '9:00-10:00', subject: 'Mathematics', teacher: 'Mr. Kumar', room: '101' },
-      { time: '10:00-11:00', subject: 'English', teacher: 'Ms. Sharma', room: '102' },
-      { time: '11:00-12:00', subject: 'Science', teacher: 'Mr. Patel', room: '103' },
-      { time: '12:00-1:00', subject: 'Lunch Break', teacher: '', room: '' },
-      { time: '1:00-2:00', subject: 'History', teacher: 'Mr. Singh', room: '104' },
-      { time: '2:00-3:00', subject: 'Geography', teacher: 'Ms. Gupta', room: '105' },
-    ],
-    tuesday: [
-      { time: '9:00-10:00', subject: 'Science', teacher: 'Mr. Patel', room: '103' },
-      { time: '10:00-11:00', subject: 'Mathematics', teacher: 'Mr. Kumar', room: '101' },
-      { time: '11:00-12:00', subject: 'Hindi', teacher: 'Mr. Desai', room: '106' },
-      { time: '12:00-1:00', subject: 'Lunch Break', teacher: '', room: '' },
-      { time: '1:00-2:00', subject: 'Computer Science', teacher: 'Ms. Verma', room: '107' },
-      { time: '2:00-3:00', subject: 'Sports', teacher: 'Coach Verma', room: 'Gym' },
-    ],
-    wednesday: [
-      { time: '9:00-10:00', subject: 'English', teacher: 'Ms. Sharma', room: '102' },
-      { time: '10:00-11:00', subject: 'History', teacher: 'Mr. Singh', room: '104' },
-      { time: '11:00-12:00', subject: 'Mathematics', teacher: 'Mr. Kumar', room: '101' },
-      { time: '12:00-1:00', subject: 'Lunch Break', teacher: '', room: '' },
-      { time: '1:00-2:00', subject: 'Geography', teacher: 'Ms. Gupta', room: '105' },
-      { time: '2:00-3:00', subject: 'Science', teacher: 'Mr. Patel', room: '103' },
-    ],
-    thursday: [
-      { time: '9:00-10:00', subject: 'Hindi', teacher: 'Mr. Desai', room: '106' },
-      { time: '10:00-11:00', subject: 'Computer Science', teacher: 'Ms. Verma', room: '107' },
-      { time: '11:00-12:00', subject: 'English', teacher: 'Ms. Sharma', room: '102' },
-      { time: '12:00-1:00', subject: 'Lunch Break', teacher: '', room: '' },
-      { time: '1:00-2:00', subject: 'Mathematics', teacher: 'Mr. Kumar', room: '101' },
-      { time: '2:00-3:00', subject: 'History', teacher: 'Mr. Singh', room: '104' },
-    ],
-    friday: [
-      { time: '9:00-10:00', subject: 'Geography', teacher: 'Ms. Gupta', room: '105' },
-      { time: '10:00-11:00', subject: 'Science', teacher: 'Mr. Patel', room: '103' },
-      { time: '11:00-12:00', subject: 'Sports', teacher: 'Coach Verma', room: 'Gym' },
-      { time: '12:00-1:00', subject: 'Lunch Break', teacher: '', room: '' },
-      { time: '1:00-2:00', subject: 'English', teacher: 'Ms. Sharma', room: '102' },
-      { time: '2:00-3:00', subject: 'Computer Science', teacher: 'Ms. Verma', room: '107' },
-    ],
-    saturday: [
-      { time: '9:00-11:00', subject: 'Extra Curricular Activities', teacher: 'Various', room: 'Auditorium' },
-      { time: '11:00-12:00', subject: 'Study Hall', teacher: 'Self Study', room: 'Library' },
-    ],
-  };
+  const user = useSelector((state) => state.auth.user);
+  const [timetable, setTimetable] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  useEffect(() => {
+    const className = user?.className || '10A';
+    timetableApi
+      .get(className)
+      .then((data) => setTimetable(data.timetable))
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [user?.className]);
 
   const handleExportTimetable = () => {
+    if (!timetable) return;
     const rows = [];
-    Object.entries(timetable).forEach(([day, slots]) => {
-      slots.forEach(slot => {
+    days.forEach((day) => {
+      (timetable[day] || []).forEach((slot) => {
         rows.push([
-          day.charAt(0).toUpperCase() + day.slice(1),
+          day,
           slot.time,
           slot.subject,
           slot.teacher || '-',
@@ -66,132 +36,84 @@ export const StudentTimetable = () => {
         ]);
       });
     });
-
-    const xmlRows = rows.map(row =>
-      `<Row>${row.map(value => `<Cell><Data ss:Type="String">${String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')}
-      </Data></Cell>`).join('')}</Row>`
-    ).join('');
-
-    const xmlContent = `<?xml version="1.0"?>\n<?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n  <Worksheet ss:Name="Student Timetable">\n    <Table>\n      <Row>\n        <Cell><Data ss:Type="String">Day</Data></Cell>\n        <Cell><Data ss:Type="String">Time</Data></Cell>\n        <Cell><Data ss:Type="String">Subject</Data></Cell>\n        <Cell><Data ss:Type="String">Teacher</Data></Cell>\n        <Cell><Data ss:Type="String">Room</Data></Cell>\n      </Row>\n      ${xmlRows}\n    </Table>\n  </Worksheet>\n</Workbook>`;
-
-    const blob = new Blob([xmlContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const csv = [['Day', 'Time', 'Subject', 'Teacher', 'Room'], ...rows]
+      .map((r) => r.join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'student-timetable.xls');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${user?.className || 'class'}-timetable.csv`;
+    a.click();
   };
 
   return (
     <Container className="space-y-6 py-6">
-      {/* Header */}
-      <div className="bg-linear-to-r from-blue-600 to-indigo-600 rounded-lg p-8 text-white shadow-lg">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-              <Calendar className="w-10 h-10" />
-              Weekly Timetable
-            </h1>
-            <p className="text-blue-100">
-              Class 10A - Academic Year 2025-2026
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleExportTimetable}
-            className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition hover:cursor-pointer"
-          >
-            <Download className="w-4 h-4" />
-            Download
-          </button>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">My Timetable</h1>
+          <p className="mt-1 text-gray-600">
+            Class {user?.className || '—'} · loaded from API
+          </p>
         </div>
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          onClick={handleExportTimetable}
+          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white"
+        >
+          <Download className="h-4 w-4" /> Export
+        </motion.button>
       </div>
 
-      {/* Timetable Grid */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 border-b border-gray-200">
-                  Time
-                </th>
-                {days.map(day => (
-                  <th key={day} className="px-6 py-4 text-left text-sm font-semibold text-gray-900 border-b border-gray-200 capitalize">
-                    {day}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {/* Get all unique time slots */}
-              {Array.from(new Set(
-                Object.values(timetable).flat().map(slot => slot.time)
-              )).sort().map(timeSlot => (
-                <tr key={timeSlot} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900 border-r border-gray-200 bg-gray-50">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-gray-500" />
-                      {timeSlot}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="rounded-lg border bg-white p-8 text-center text-gray-500">
+          Loading timetable...
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {days.map((day) => (
+            <motion.div
+              key={day}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="overflow-hidden rounded-2xl border bg-white shadow-sm"
+            >
+              <div className="flex items-center gap-2 bg-blue-600 px-4 py-3 font-semibold capitalize text-white">
+                <Calendar className="h-4 w-4" />
+                {day}
+              </div>
+              <div className="space-y-2 p-4">
+                {(timetable?.[day] || []).length === 0 ? (
+                  <p className="text-sm text-gray-500">No classes</p>
+                ) : (
+                  (timetable[day] || []).map((slot) => (
+                    <div
+                      key={`${day}-${slot.id}-${slot.time}`}
+                      className="rounded-xl border border-gray-100 bg-gray-50 p-3"
+                    >
+                      <div className="mb-1 flex items-center gap-2 text-sm text-blue-700">
+                        <Clock className="h-3.5 w-3.5" />
+                        {slot.time}
+                      </div>
+                      <p className="font-semibold text-gray-900">{slot.subject}</p>
+                      <p className="text-sm text-gray-600">
+                        {slot.teacher}
+                        {slot.room ? ` · ${slot.room}` : ''}
+                      </p>
                     </div>
-                  </td>
-                  {days.map(day => {
-                    const slot = timetable[day].find(s => s.time === timeSlot);
-                    return (
-                      <td key={day} className="px-6 py-4 text-sm border-r border-gray-200 last:border-r-0">
-                        {slot ? (
-                          <div className={`p-3 rounded-lg ${
-                            slot.subject === 'Lunch Break'
-                              ? 'bg-orange-50 border border-orange-200'
-                              : 'bg-blue-50 border border-blue-200'
-                          }`}>
-                            <div className="font-semibold text-gray-900 mb-1">
-                              {slot.subject}
-                            </div>
-                            {slot.teacher && (
-                              <div className="text-xs text-gray-600 mb-1">
-                                {slot.teacher}
-                              </div>
-                            )}
-                            {slot.room && (
-                              <div className="text-xs text-gray-500">
-                                Room: {slot.room}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-gray-400 text-sm">-</div>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          ))}
         </div>
-      </div>
-
-      {/* Legend */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Legend</h3>
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-50 border border-blue-200 rounded"></div>
-            <span className="text-sm text-gray-700">Regular Classes</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-orange-50 border border-orange-200 rounded"></div>
-            <span className="text-sm text-gray-700">Break Time</span>
-          </div>
-        </div>
-      </div>
+      )}
     </Container>
   );
 };

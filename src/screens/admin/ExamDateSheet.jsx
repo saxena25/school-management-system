@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Plus, Trash2, Edit2, Save, X, Calendar } from 'lucide-react';
 import Container from '../../components/ui-components/container';
-import examData from '../../data/admin/examDateSheet.json';
+import { examApi } from '../../services/api';
 
 export const ExamDateSheet = () => {
-  const [exams, setExams] = useState(examData.exams);
-  const [schedules, setSchedules] = useState(examData.schedules);
-
-  const [selectedExam, setSelectedExam] = useState('Mid-Term Exams');
+  const [exams, setExams] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [selectedExamId, setSelectedExamId] = useState(null);
   const [editingExam, setEditingExam] = useState(null);
+  const [showNewScheduleForm, setShowNewScheduleForm] = useState(false);
   const [newSchedule, setNewSchedule] = useState({
     class: '10A',
     subject: 'Mathematics',
@@ -16,347 +19,340 @@ export const ExamDateSheet = () => {
     time: '10:00-12:00',
     room: '',
   });
-  const [showNewScheduleForm, setShowNewScheduleForm] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const subjects = ['Mathematics', 'English', 'Science', 'History', 'Geography', 'Hindi', 'Computer Science'];
-  const classes = ['8A', '8B', '9A', '9B', '10A', '10B', '11A', '11B', '12A', '12B'];
-  const rooms = ['A101', 'A102', 'A103', 'A104', 'B101', 'B102', 'B103', 'B104'];
-
-  const handleAddExam = () => {
-    const newId = Math.max(...exams.map(e => e.id), 0) + 1;
-    const newExam = {
-      id: newId,
-      examName: `Exam ${newId}`,
-      startDate: '',
-      endDate: '',
-      status: 'planned'
-    };
-    setExams([...exams, newExam]);
-    setEditingExam(newExam);
-    setSchedules(prev => ({
-      ...prev,
-      [`Exam ${newId}`]: []
-    }));
-  };
-
-  const handleUpdateExam = (id, field, value) => {
-    const updatedExams = exams.map(exam =>
-      exam.id === id ? { ...exam, [field]: value } : exam
-    );
-    setExams(updatedExams);
-    if (editingExam?.id === id) {
-      setEditingExam({ ...editingExam, [field]: value });
+  const load = async () => {
+    setLoading(true);
+    try {
+      const data = await examApi.list();
+      setExams(data.exams || []);
+      setClasses(data.classes || []);
+      setSubjects(data.subjects || []);
+      setRooms(data.rooms || []);
+      if (!selectedExamId && data.exams?.[0]) {
+        setSelectedExamId(data.exams[0].id);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteExam = (id, examName) => {
-    const newExams = exams.filter(exam => exam.id !== id);
-    setExams(newExams);
-    const newSchedules = { ...schedules };
-    delete newSchedules[examName];
-    setSchedules(newSchedules);
-    if (selectedExam === examName && newExams.length > 0) {
-      setSelectedExam(newExams[0].examName);
+  useEffect(() => {
+    load();
+  }, []);
+
+  const selectedExam = useMemo(
+    () => exams.find((e) => e.id === selectedExamId) || exams[0],
+    [exams, selectedExamId]
+  );
+
+  const handleAddExam = async () => {
+    try {
+      const data = await examApi.create({
+        examName: `Exam ${exams.length + 1}`,
+        status: 'planned',
+      });
+      setExams((prev) => [data.exam, ...prev]);
+      setSelectedExamId(data.exam.id);
+      setEditingExam(data.exam);
+    } catch (err) {
+      setError(err.message);
     }
   };
 
-  const handleAddSchedule = () => {
-    if (!newSchedule.date || !newSchedule.room) {
-      alert('Please fill all fields');
+  const handleSaveExam = async () => {
+    if (!editingExam) return;
+    try {
+      const data = await examApi.update(editingExam.id, editingExam);
+      setExams((prev) => prev.map((e) => (e.id === data.exam.id ? data.exam : e)));
+      setEditingExam(null);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleDeleteExam = async (id) => {
+    try {
+      await examApi.remove(id);
+      const next = exams.filter((e) => e.id !== id);
+      setExams(next);
+      setSelectedExamId(next[0]?.id || null);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleAddSchedule = async () => {
+    if (!selectedExam || !newSchedule.date || !newSchedule.room) {
+      setError('Please fill all fields');
       return;
     }
-
-    const newId = Math.max(...(schedules[selectedExam]?.map(s => s.id) || [0]), 0) + 1;
-    const scheduleItem = { ...newSchedule, id: newId };
-
-    setSchedules(prev => ({
-      ...prev,
-      [selectedExam]: [...(prev[selectedExam] || []), scheduleItem]
-    }));
-
-    setNewSchedule({
-      class: '10A',
-      subject: 'Mathematics',
-      date: '',
-      time: '10:00-12:00',
-      room: '',
-    });
-    setShowNewScheduleForm(false);
+    try {
+      const data = await examApi.addSchedule(selectedExam.id, newSchedule);
+      setExams((prev) => prev.map((e) => (e.id === data.exam.id ? data.exam : e)));
+      setNewSchedule({
+        class: '10A',
+        subject: 'Mathematics',
+        date: '',
+        time: '10:00-12:00',
+        room: '',
+      });
+      setShowNewScheduleForm(false);
+      setError('');
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
-  const handleUpdateSchedule = (id, field, value) => {
-    setSchedules(prev => ({
-      ...prev,
-      [selectedExam]: prev[selectedExam].map(schedule =>
-        schedule.id === id ? { ...schedule, [field]: value } : schedule
-      )
-    }));
-  };
-
-  const handleDeleteSchedule = (id) => {
-    setSchedules(prev => ({
-      ...prev,
-      [selectedExam]: prev[selectedExam].filter(schedule => schedule.id !== id)
-    }));
+  const handleDeleteSchedule = async (scheduleId) => {
+    try {
+      const data = await examApi.removeSchedule(selectedExam.id, scheduleId);
+      setExams((prev) => prev.map((e) => (e.id === data.exam.id ? data.exam : e)));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
     <Container className="space-y-6 py-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Exam DateSheet</h1>
-          <p className="text-gray-600 mt-1">Create and manage exam schedules for all classes</p>
+          <p className="mt-1 text-gray-600">Persisted exam schedules</p>
         </div>
-        <button
+        <motion.button
+          whileHover={{ scale: 1.03 }}
           onClick={handleAddExam}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition"
+          className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 font-medium text-white"
         >
-          <Plus className="w-4 h-4" />
-          New Exam
-        </button>
+          <Plus className="h-4 w-4" /> New Exam
+        </motion.button>
       </div>
 
-      {/* Exam List */}
-      <div className="bg-white rounded-lg shadow border border-gray-200">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Exams</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {exams.map(exam => (
-              <div
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="rounded-lg border bg-white p-8 text-center text-gray-500">
+          Loading exams...
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {exams.map((exam) => (
+              <motion.div
                 key={exam.id}
-                onClick={() => setSelectedExam(exam.examName)}
-                className={`p-4 rounded-lg border-2 cursor-pointer transition ${
-                  selectedExam === exam.examName
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                whileHover={{ y: -3 }}
+                onClick={() => setSelectedExamId(exam.id)}
+                className={`cursor-pointer rounded-xl border p-4 shadow-sm ${
+                  selectedExam?.id === exam.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 bg-white'
                 }`}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900">{exam.examName}</h3>
+                <div className="mb-2 flex items-start justify-between">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{exam.examName}</h3>
+                    <p className="text-sm text-gray-500 capitalize">{exam.status}</p>
+                  </div>
+                  <Calendar className="h-4 w-4 text-blue-600" />
+                </div>
+                <p className="text-sm text-gray-600">
+                  {exam.startDate || 'TBD'} → {exam.endDate || 'TBD'}
+                </p>
+                <div className="mt-3 flex gap-2">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDeleteExam(exam.id, exam.examName);
+                      setEditingExam(exam);
                     }}
-                    className="text-red-600 hover:text-red-800"
+                    className="text-blue-600"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteExam(exam.id);
+                    }}
+                    className="text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
-                {editingExam?.id === exam.id ? (
-                  <div className="space-y-2">
-                    <input
-                      type="date"
-                      value={editingExam.startDate}
-                      onChange={(e) => handleUpdateExam(exam.id, 'startDate', e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-gray-900"
-                    />
-                    <input
-                      type="date"
-                      value={editingExam.endDate}
-                      onChange={(e) => handleUpdateExam(exam.id, 'endDate', e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-gray-900"
-                    />
-                    <button
-                      onClick={() => setEditingExam(null)}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-sm font-medium transition"
-                    >
-                      Done
-                    </button>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-sm text-gray-600 mb-2">
-                      <Calendar className="w-4 h-4 inline mr-1" />
-                      {exam.startDate ? new Date(exam.startDate).toLocaleDateString() : 'Start date not set'} -{' '}
-                      {exam.endDate ? new Date(exam.endDate).toLocaleDateString() : 'End date not set'}
-                    </p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingExam(exam);
-                        }}
-                        className="flex-1 flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-sm font-medium transition"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                        Edit
-                      </button>
-                      <span className={`flex-1 text-center text-xs font-semibold rounded py-1 ${
-                        exam.status === 'scheduled' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {exam.status}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
-      </div>
 
-      {/* Schedule Table for Selected Exam */}
-      {selectedExam && (
-        <div className="bg-white rounded-lg shadow border border-gray-200">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Exam Schedule - {selectedExam}</h2>
-              <button
-                onClick={() => setShowNewScheduleForm(true)}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition"
-              >
-                <Plus className="w-4 h-4" />
-                Add Schedule
-              </button>
+          {editingExam && (
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+              <div className="grid gap-3 md:grid-cols-4">
+                <input
+                  value={editingExam.examName}
+                  onChange={(e) =>
+                    setEditingExam({ ...editingExam, examName: e.target.value })
+                  }
+                  className="rounded border px-3 py-2"
+                />
+                <input
+                  type="date"
+                  value={editingExam.startDate || ''}
+                  onChange={(e) =>
+                    setEditingExam({ ...editingExam, startDate: e.target.value })
+                  }
+                  className="rounded border px-3 py-2"
+                />
+                <input
+                  type="date"
+                  value={editingExam.endDate || ''}
+                  onChange={(e) =>
+                    setEditingExam({ ...editingExam, endDate: e.target.value })
+                  }
+                  className="rounded border px-3 py-2"
+                />
+                <select
+                  value={editingExam.status}
+                  onChange={(e) =>
+                    setEditingExam({ ...editingExam, status: e.target.value })
+                  }
+                  className="rounded border px-3 py-2"
+                >
+                  <option value="planned">planned</option>
+                  <option value="scheduled">scheduled</option>
+                  <option value="completed">completed</option>
+                </select>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={handleSaveExam}
+                  className="rounded-lg bg-green-600 px-3 py-2 text-white"
+                >
+                  <Save className="mr-1 inline h-4 w-4" /> Save
+                </button>
+                <button
+                  onClick={() => setEditingExam(null)}
+                  className="rounded-lg bg-gray-200 px-3 py-2"
+                >
+                  <X className="mr-1 inline h-4 w-4" /> Cancel
+                </button>
+              </div>
             </div>
+          )}
 
-            {/* Add Schedule Form */}
-            {showNewScheduleForm && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-300">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                    <select
-                      value={newSchedule.class}
-                      onChange={(e) => setNewSchedule({ ...newSchedule, class: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
-                    >
-                      {classes.map(cls => (
-                        <option key={cls} value={cls}>{cls}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                    <select
-                      value={newSchedule.subject}
-                      onChange={(e) => setNewSchedule({ ...newSchedule, subject: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
-                    >
-                      {subjects.map(subj => (
-                        <option key={subj} value={subj}>{subj}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                    <input
-                      type="date"
-                      value={newSchedule.date}
-                      onChange={(e) => setNewSchedule({ ...newSchedule, date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                    <input
-                      type="text"
-                      value={newSchedule.time}
-                      onChange={(e) => setNewSchedule({ ...newSchedule, time: e.target.value })}
-                      placeholder="10:00-12:00"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Room</label>
-                    <select
-                      value={newSchedule.room}
-                      onChange={(e) => setNewSchedule({ ...newSchedule, room: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
-                    >
-                      <option value="">Select Room</option>
-                      {rooms.map(room => (
-                        <option key={room} value={room}>{room}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleAddSchedule}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition"
-                  >
-                    <Save className="w-4 h-4" />
-                    Add
-                  </button>
-                  <button
-                    onClick={() => setShowNewScheduleForm(false)}
-                    className="flex items-center gap-2 bg-gray-300 hover:bg-gray-400 text-gray-900 px-4 py-2 rounded-lg font-medium transition"
-                  >
-                    <X className="w-4 h-4" />
-                    Cancel
-                  </button>
-                </div>
+          {selectedExam && (
+            <div className="rounded-lg border bg-white p-6 shadow">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-semibold">
+                  Schedules · {selectedExam.examName}
+                </h2>
+                <button
+                  onClick={() => setShowNewScheduleForm(true)}
+                  className="rounded-lg bg-blue-600 px-3 py-2 text-white"
+                >
+                  Add Schedule
+                </button>
               </div>
-            )}
 
-            {/* Schedules Table */}
-            {schedules[selectedExam]?.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b-2 border-gray-300 bg-gray-50">
-                      <th className="px-4 py-3 text-left font-semibold text-gray-900">Class</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-900">Subject</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-900">Date</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-900">Time</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-900">Room</th>
-                      <th className="px-4 py-3 text-center font-semibold text-gray-900">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {schedules[selectedExam].map(schedule => (
-                      <tr key={schedule.id} className="border-b border-gray-200 hover:bg-gray-50">
-                        <td className="px-4 py-3 text-gray-900">{schedule.class}</td>
-                        <td className="px-4 py-3 text-gray-900">{schedule.subject}</td>
-                        <td className="px-4 py-3 text-gray-900">
-                          <input
-                            type="date"
-                            value={schedule.date}
-                            onChange={(e) => handleUpdateSchedule(schedule.id, 'date', e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-gray-900"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-gray-900">
-                          <input
-                            type="text"
-                            value={schedule.time}
-                            onChange={(e) => handleUpdateSchedule(schedule.id, 'time', e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-gray-900"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-gray-900">
-                          <select
-                            value={schedule.room}
-                            onChange={(e) => handleUpdateSchedule(schedule.id, 'room', e.target.value)}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-gray-900"
-                          >
-                            {rooms.map(room => (
-                              <option key={room} value={room}>{room}</option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <button
-                            onClick={() => handleDeleteSchedule(schedule.id)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
+              {showNewScheduleForm && (
+                <div className="mb-4 grid gap-3 rounded-lg border bg-gray-50 p-4 md:grid-cols-5">
+                  <select
+                    value={newSchedule.class}
+                    onChange={(e) =>
+                      setNewSchedule({ ...newSchedule, class: e.target.value })
+                    }
+                    className="rounded border px-2 py-2"
+                  >
+                    {classes.map((c) => (
+                      <option key={c}>{c}</option>
                     ))}
-                  </tbody>
-                </table>
+                  </select>
+                  <select
+                    value={newSchedule.subject}
+                    onChange={(e) =>
+                      setNewSchedule({ ...newSchedule, subject: e.target.value })
+                    }
+                    className="rounded border px-2 py-2"
+                  >
+                    {subjects.map((s) => (
+                      <option key={s}>{s}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="date"
+                    value={newSchedule.date}
+                    onChange={(e) =>
+                      setNewSchedule({ ...newSchedule, date: e.target.value })
+                    }
+                    className="rounded border px-2 py-2"
+                  />
+                  <input
+                    value={newSchedule.time}
+                    onChange={(e) =>
+                      setNewSchedule({ ...newSchedule, time: e.target.value })
+                    }
+                    className="rounded border px-2 py-2"
+                  />
+                  <select
+                    value={newSchedule.room}
+                    onChange={(e) =>
+                      setNewSchedule({ ...newSchedule, room: e.target.value })
+                    }
+                    className="rounded border px-2 py-2"
+                  >
+                    <option value="">Room</option>
+                    {rooms.map((r) => (
+                      <option key={r}>{r}</option>
+                    ))}
+                  </select>
+                  <div className="md:col-span-5 flex gap-2">
+                    <button
+                      onClick={handleAddSchedule}
+                      className="rounded-lg bg-green-600 px-3 py-2 text-white"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setShowNewScheduleForm(false)}
+                      className="rounded-lg bg-gray-200 px-3 py-2"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                {(selectedExam.schedules || []).map((schedule) => (
+                  <div
+                    key={schedule.id}
+                    className="flex items-center justify-between rounded-lg border px-4 py-3"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {schedule.class} · {schedule.subject}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {schedule.date} · {schedule.time} · {schedule.room}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteSchedule(schedule.id)}
+                      className="text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ) : (
-              <div className="text-center py-8 bg-gray-50 rounded-lg">
-                <p className="text-gray-600">No schedules added yet</p>
-              </div>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
+        </>
       )}
     </Container>
   );

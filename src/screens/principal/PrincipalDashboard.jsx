@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   Users,
   BookOpen,
@@ -7,158 +8,166 @@ import {
   AlertCircle,
   Clock,
 } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import StatCard from '../../components/StatCard';
 import Container from '../../components/ui-components/container';
-import dashboardData from '../../data/principalDashboard.json';
+import { dashboardApi } from '../../services/api';
+import { staggerContainer, staggerItem } from '../../utils/motion';
 
 export const PrincipalDashboard = () => {
-  const { stats, chartData, recentActivities, alerts } = dashboardData;
+  const user = useSelector((state) => state.auth.user);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    dashboardApi
+      .get()
+      .then(setData)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <Container className="py-10">
+        <div className="h-40 animate-pulse rounded-2xl bg-purple-100" />
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container className="py-10">
+        <p className="text-red-600">{error}</p>
+      </Container>
+    );
+  }
+
+  const { stats, chartData, recentActivities, alerts } = data;
 
   return (
-    <Container className={"py-6"}>
+    <Container className="py-6">
       <div className="space-y-6">
-        {/* Welcome Section */}
-        <div className="bg-linear-to-r from-purple-600 to-blue-600 rounded-lg p-8 text-white shadow-lg">
-          <h1 className="text-4xl font-bold mb-2">Welcome Principal</h1>
-          <p className="text-purple-100">
-            Here's your school performance overview and management dashboard
-          </p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl bg-linear-to-r from-purple-600 to-blue-600 p-8 text-white shadow-lg"
+        >
+          <h1 className="mb-2 text-4xl font-bold">
+            Welcome {user?.name || 'Principal'}
+          </h1>
+          <p className="text-purple-100">School-wide overview from live APIs</p>
+        </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <StatCard
-            title="Total Students"
-            value={stats.totalStudents}
-            subtitle="Active Students"
-            icon={Users}
-            trend="up"
-            trendValue="+4.2%"
-            bgColor="bg-blue-50"
-            iconColor="text-blue-600"
-            borderColor="border-blue-200"
-          />
-          <StatCard
-            title="Total Teachers"
-            value={stats.totalTeachers}
-            subtitle="Staff Members"
-            icon={Award}
-            trend="up"
-            trendValue="+2 new"
-            bgColor="bg-green-50"
-            iconColor="text-green-600"
-            borderColor="border-green-200"
-          />
-          <StatCard
-            title="Classes"
-            value={stats.totalClasses}
-            subtitle="Active Classes"
-            icon={BookOpen}
-            trend="stable"
-            trendValue="All active"
-            bgColor="bg-amber-50"
-            iconColor="text-amber-600"
-            borderColor="border-amber-200"
-          />
-          <StatCard
-            title="Attendance Rate"
-            value={`${stats.averageAttendance}%`}
-            subtitle="This Month"
-            icon={Clock}
-            trend="down"
-            trendValue="-1.2%"
-            bgColor="bg-purple-50"
-            iconColor="text-purple-600"
-            borderColor="border-purple-200"
-          />
-          <StatCard
-            title="Pass Rate"
-            value={`${stats.passRate}%`}
-            subtitle="Last Term"
-            icon={TrendingUp}
-            trend="up"
-            trendValue="+3.5%"
-            bgColor="bg-cyan-50"
-            iconColor="text-cyan-600"
-            borderColor="border-cyan-200"
-          />
-          <StatCard
-            title="Upcoming Events"
-            value={stats.eventsUpcoming}
-            subtitle="This Month"
-            icon={AlertCircle}
-            trend="stable"
-            trendValue="On schedule"
-            bgColor="bg-red-50"
-            iconColor="text-red-600"
-            borderColor="border-red-200"
-          />
-        </div>
+        <motion.div
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+          className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+        >
+          {[
+            {
+              title: 'Total Students',
+              value: stats.totalStudents,
+              icon: Users,
+              bgColor: 'bg-blue-50',
+              iconColor: 'text-blue-600',
+              borderColor: 'border-blue-200',
+            },
+            {
+              title: 'Total Teachers',
+              value: stats.totalTeachers,
+              icon: Award,
+              bgColor: 'bg-green-50',
+              iconColor: 'text-green-600',
+              borderColor: 'border-green-200',
+            },
+            {
+              title: 'Classes',
+              value: stats.totalClasses,
+              icon: BookOpen,
+              bgColor: 'bg-amber-50',
+              iconColor: 'text-amber-600',
+              borderColor: 'border-amber-200',
+            },
+            {
+              title: 'Attendance Rate',
+              value: `${stats.averageAttendance}%`,
+              icon: Clock,
+              bgColor: 'bg-purple-50',
+              iconColor: 'text-purple-600',
+              borderColor: 'border-purple-200',
+            },
+            {
+              title: 'Pass Rate',
+              value: `${stats.passRate}%`,
+              icon: TrendingUp,
+              bgColor: 'bg-cyan-50',
+              iconColor: 'text-cyan-600',
+              borderColor: 'border-cyan-200',
+            },
+          ].map((card) => (
+            <motion.div key={card.title} variants={staggerItem}>
+              <StatCard
+                title={card.title}
+                value={card.value}
+                subtitle="From API"
+                icon={card.icon}
+                trend="up"
+                trendValue="Live"
+                bgColor={card.bgColor}
+                iconColor={card.iconColor}
+                borderColor={card.borderColor}
+              />
+            </motion.div>
+          ))}
+        </motion.div>
 
-        {/* Performance by Class */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-gray-800 mb-6">Class Performance</h2>
-          <div className="space-y-4">
-            {chartData.map((classData, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-700">{classData.label}</span>
-                  <span className="text-sm text-gray-600">
-                    {classData.pass}/{classData.value} Passed
-                  </span>
-                </div>
-                <div className="flex gap-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="bg-green-500 transition-all"
-                    style={{ width: `${(classData.pass / classData.value) * 100}%` }}
-                  />
-                  <div
-                    className="bg-red-500 transition-all"
-                    style={{ width: `${(classData.fail / classData.value) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Recent Activities */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">Recent Activities</h2>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="rounded-2xl border bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-xl font-semibold">Class Snapshot</h2>
             <div className="space-y-3">
-              {recentActivities.map((activity, idx) => (
+              {(chartData || []).map((row) => (
                 <div
-                  key={idx}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  key={row.label}
+                  className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2"
                 >
-                  <p className="text-sm font-medium text-gray-700">{activity.title}</p>
-                  <p className="text-xs text-gray-500">{activity.time}</p>
+                  <span>{row.label}</span>
+                  <span className="text-sm text-gray-600">
+                    {row.pass}/{row.value} passed
+                  </span>
                 </div>
               ))}
             </div>
           </div>
-
-          {/* Alerts */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">Important Alerts</h2>
+          <div className="rounded-2xl border bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-xl font-semibold">Alerts</h2>
             <div className="space-y-3">
-              {alerts.map((alert, idx) => {
-                const severityColors = {
-                  high: 'bg-red-50 border-red-200 text-red-700',
-                  medium: 'bg-yellow-50 border-yellow-200 text-yellow-700',
-                  low: 'bg-green-50 border-green-200 text-green-700',
-                };
-                return (
-                  <div
-                    key={idx}
-                    className={`p-3 rounded-lg border ${severityColors[alert.severity]}`}
-                  >
-                    <p className="text-sm font-medium">{alert.message}</p>
+              {(alerts || []).map((alert) => (
+                <div
+                  key={alert.message}
+                  className="flex items-start gap-2 rounded-xl border border-gray-100 bg-gray-50 p-3"
+                >
+                  <AlertCircle className="mt-0.5 h-4 w-4 text-amber-600" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {alert.message}
+                    </p>
+                    <p className="text-xs capitalize text-gray-500">
+                      {alert.severity}
+                    </p>
                   </div>
-                );
-              })}
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 space-y-2">
+              <h3 className="font-semibold">Recent Activity</h3>
+              {(recentActivities || []).map((item) => (
+                <div key={item.title} className="text-sm text-gray-600">
+                  {item.title} · {item.time}
+                </div>
+              ))}
             </div>
           </div>
         </div>

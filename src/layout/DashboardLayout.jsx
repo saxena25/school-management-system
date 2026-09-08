@@ -5,6 +5,8 @@ import { useSelector } from "react-redux";
 import Sidebar from "../components/sidebar/Sidebar";
 import Header from "../components/header/Header";
 
+import { pageTransition } from "../utils/motion";
+
 export const DashboardLayout = ({ children }) => {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -19,7 +21,7 @@ export const DashboardLayout = ({ children }) => {
   }
 
   return (
-    <div className="flex h-screen w-full bg-gray-50">
+    <div className="flex h-screen w-full bg-gradient-to-br from-slate-50 via-white to-sky-50">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header
@@ -30,10 +32,7 @@ export const DashboardLayout = ({ children }) => {
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -18 }}
-              transition={{ duration: 0.32, ease: "easeOut" }}
+              {...pageTransition}
               className="flex-1"
             >
               {children}

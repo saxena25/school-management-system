@@ -1,63 +1,103 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Plus, Trash2, Edit2, Save, X, Search } from 'lucide-react';
 import Container from '../../components/ui-components/container';
-import studentData from '../../data/admin/studentManagement.json';
+import { usersApi } from '../../services/api';
+import { staggerContainer, staggerItem } from '../../utils/motion';
+
+const emptyStudent = {
+  name: '',
+  email: '',
+  className: '10A',
+  rollNo: '',
+  phone: '',
+  address: '',
+  admissionDate: new Date().toISOString().split('T')[0],
+};
 
 export const StudentManagement = () => {
-  const [students, setStudents] = useState(() => studentData.students);
+  const [students, setStudents] = useState([]);
+  const [classes, setClasses] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterClass, setFilterClass] = useState('All');
   const [editingStudent, setEditingStudent] = useState(null);
-  const [newStudent, setNewStudent] = useState({
-    name: '',
-    email: '',
-    class: '10A',
-    rollNo: '',
-    phone: '',
-    address: '',
-    admissionDate: new Date().toISOString().split('T')[0],
-  });
-  const classes = studentData.classes;
+  const [newStudent, setNewStudent] = useState(emptyStudent);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const filteredStudents = students.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          student.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesClass = filterClass === 'All' || student.class === filterClass;
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [usersData, meta] = await Promise.all([
+        usersApi.list({ role: 'student' }),
+        usersApi.meta(),
+      ]);
+      setStudents(usersData.users || []);
+      setClasses(meta.classes || []);
+      setError('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const filteredStudents = students.filter((student) => {
+    const matchesSearch =
+      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesClass =
+      filterClass === 'All' || student.className === filterClass;
     return matchesSearch && matchesClass;
   });
 
-  const handleAddStudent = () => {
+  const handleAddStudent = async () => {
     if (!newStudent.name || !newStudent.email || !newStudent.rollNo) {
-      alert('Please fill all required fields');
+      setError('Please fill all required fields');
       return;
     }
-    const id = Math.max(...students.map(s => s.id), 0) + 1;
-    setStudents([...students, { ...newStudent, id }]);
-    setNewStudent({
-      name: '',
-      email: '',
-      class: '10A',
-      rollNo: '',
-      phone: '',
-      address: '',
-      admissionDate: new Date().toISOString().split('T')[0],
-    });
-    setShowForm(false);
-  };
-
-  const handleUpdateStudent = () => {
-    if (!editingStudent.name || !editingStudent.email || !editingStudent.rollNo) {
-      alert('Please fill all required fields');
-      return;
+    try {
+      const data = await usersApi.createStudent(newStudent);
+      setStudents((prev) => [data.user, ...prev]);
+      setNewStudent(emptyStudent);
+      setShowForm(false);
+      setError('');
+    } catch (err) {
+      setError(err.message);
     }
-    setStudents(students.map(s => s.id === editingStudent.id ? editingStudent : s));
-    setEditingStudent(null);
   };
 
-  const handleDeleteStudent = (id) => {
-    if (window.confirm('Are you sure you want to delete this student?')) {
-      setStudents(students.filter(s => s.id !== id));
+  const handleUpdateStudent = async () => {
+    try {
+      const data = await usersApi.updateStudent(editingStudent.id, {
+        name: editingStudent.name,
+        email: editingStudent.email,
+        className: editingStudent.className,
+        rollNo: editingStudent.rollNo,
+        phone: editingStudent.phone,
+        address: editingStudent.address,
+      });
+      setStudents((prev) =>
+        prev.map((s) => (s.id === data.user.id ? data.user : s))
+      );
+      setEditingStudent(null);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleDeleteStudent = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this student?')) return;
+    try {
+      await usersApi.deleteStudent(id);
+      setStudents((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -66,277 +106,219 @@ export const StudentManagement = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Student Management</h1>
-          <p className="text-gray-600 mt-1">Add, edit, and manage student information</p>
+          <p className="mt-1 text-gray-600">Live CRUD against the EduMS API</p>
         </div>
-        <button
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition"
+          className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 font-medium text-white transition hover:bg-green-700"
         >
           <Plus className="w-4 h-4" />
           Add Student
-        </button>
+        </motion.button>
       </div>
 
-      {/* Search and Filter */}
-      <div className="bg-white rounded-lg p-6 shadow border border-gray-200">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="relative md:col-span-2">
-            <Search className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search by name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
+              className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <select
             value={filterClass}
             onChange={(e) => setFilterClass(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
+            className="rounded-lg border border-gray-300 px-4 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option>All</option>
-            {classes.map(cls => (
-              <option key={cls} value={cls}>{cls}</option>
+            {classes.map((cls) => (
+              <option key={cls} value={cls}>
+                {cls}
+              </option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* Add Student Form */}
       {showForm && (
-        <div className="bg-white rounded-lg p-6 shadow border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Add New Student</h2>
-            <button
-              onClick={() => setShowForm(false)}
-              className="text-gray-500 hover:text-gray-700"
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-lg border border-green-200 bg-green-50 p-6"
+        >
+          <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+            {['name', 'email', 'rollNo', 'phone', 'address'].map((field) => (
+              <input
+                key={field}
+                placeholder={field}
+                value={newStudent[field]}
+                onChange={(e) =>
+                  setNewStudent({ ...newStudent, [field]: e.target.value })
+                }
+                className="rounded-lg border border-gray-300 px-3 py-2 text-gray-900"
+              />
+            ))}
+            <select
+              value={newStudent.className}
+              onChange={(e) =>
+                setNewStudent({ ...newStudent, className: e.target.value })
+              }
+              className="rounded-lg border border-gray-300 px-3 py-2 text-gray-900"
             >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-              <input
-                type="text"
-                value={newStudent.name}
-                onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
-                placeholder="Full Name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-              <input
-                type="email"
-                value={newStudent.email}
-                onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
-                placeholder="Email"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-              <select
-                value={newStudent.class}
-                onChange={(e) => setNewStudent({ ...newStudent, class: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-              >
-                {classes.map(cls => (
-                  <option key={cls} value={cls}>{cls}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Roll Number *</label>
-              <input
-                type="text"
-                value={newStudent.rollNo}
-                onChange={(e) => setNewStudent({ ...newStudent, rollNo: e.target.value })}
-                placeholder="Roll Number"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-              <input
-                type="text"
-                value={newStudent.phone}
-                onChange={(e) => setNewStudent({ ...newStudent, phone: e.target.value })}
-                placeholder="Phone"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Admission Date</label>
-              <input
-                type="date"
-                value={newStudent.admissionDate}
-                onChange={(e) => setNewStudent({ ...newStudent, admissionDate: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-              <input
-                type="text"
-                value={newStudent.address}
-                onChange={(e) => setNewStudent({ ...newStudent, address: e.target.value })}
-                placeholder="Address"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-              />
-            </div>
+              {classes.map((cls) => (
+                <option key={cls}>{cls}</option>
+              ))}
+            </select>
           </div>
           <div className="flex gap-2">
             <button
               onClick={handleAddStudent}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition"
+              className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white"
             >
-              <Save className="w-4 h-4" />
-              Save
+              <Save className="h-4 w-4" /> Save
             </button>
             <button
               onClick={() => setShowForm(false)}
-              className="flex items-center gap-2 bg-gray-300 hover:bg-gray-400 text-gray-900 px-4 py-2 rounded-lg font-medium transition"
+              className="flex items-center gap-2 rounded-lg bg-gray-200 px-4 py-2"
             >
-              <X className="w-4 h-4" />
-              Cancel
+              <X className="h-4 w-4" /> Cancel
             </button>
           </div>
-        </div>
+        </motion.div>
       )}
 
-      {/* Students Table */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
+      <motion.div
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+        className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow"
+      >
+        {loading ? (
+          <div className="p-8 text-center text-gray-500">Loading students...</div>
+        ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b-2 border-gray-300 bg-gray-50">
-                <th className="px-4 py-3 text-left font-semibold text-gray-900">Name</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-900">Email</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-900">Class</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-900">Roll No.</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-900">Phone</th>
-                <th className="px-4 py-3 text-center font-semibold text-gray-900">Action</th>
+              <tr className="border-b bg-gray-50">
+                <th className="px-4 py-3 text-left">Name</th>
+                <th className="px-4 py-3 text-left">Email</th>
+                <th className="px-4 py-3 text-center">Class</th>
+                <th className="px-4 py-3 text-center">Roll</th>
+                <th className="px-4 py-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {editingStudent ? (
-                <tr className="border-t border-gray-200 bg-yellow-50">
-                  <td colSpan="6" className="px-4 py-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              {filteredStudents.map((student) => (
+                <motion.tr
+                  key={student.id}
+                  variants={staggerItem}
+                  className="border-b hover:bg-gray-50"
+                >
+                  {editingStudent?.id === student.id ? (
+                    <>
+                      <td className="px-4 py-3">
                         <input
-                          type="text"
                           value={editingStudent.name}
-                          onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+                          onChange={(e) =>
+                            setEditingStudent({
+                              ...editingStudent,
+                              name: e.target.value,
+                            })
+                          }
+                          className="w-full rounded border px-2 py-1"
                         />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      </td>
+                      <td className="px-4 py-3">
                         <input
-                          type="email"
                           value={editingStudent.email}
-                          onChange={(e) => setEditingStudent({ ...editingStudent, email: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+                          onChange={(e) =>
+                            setEditingStudent({
+                              ...editingStudent,
+                              email: e.target.value,
+                            })
+                          }
+                          className="w-full rounded border px-2 py-1"
                         />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                      </td>
+                      <td className="px-4 py-3 text-center">
                         <select
-                          value={editingStudent.class}
-                          onChange={(e) => setEditingStudent({ ...editingStudent, class: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+                          value={editingStudent.className}
+                          onChange={(e) =>
+                            setEditingStudent({
+                              ...editingStudent,
+                              className: e.target.value,
+                            })
+                          }
+                          className="rounded border px-2 py-1"
                         >
-                          {classes.map(cls => (
-                            <option key={cls} value={cls}>{cls}</option>
+                          {classes.map((cls) => (
+                            <option key={cls}>{cls}</option>
                           ))}
                         </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Roll Number</label>
+                      </td>
+                      <td className="px-4 py-3 text-center">
                         <input
-                          type="text"
                           value={editingStudent.rollNo}
-                          onChange={(e) => setEditingStudent({ ...editingStudent, rollNo: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+                          onChange={(e) =>
+                            setEditingStudent({
+                              ...editingStudent,
+                              rollNo: e.target.value,
+                            })
+                          }
+                          className="w-20 rounded border px-2 py-1"
                         />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                        <input
-                          type="text"
-                          value={editingStudent.phone}
-                          onChange={(e) => setEditingStudent({ ...editingStudent, phone: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                        <input
-                          type="text"
-                          value={editingStudent.address}
-                          onChange={(e) => setEditingStudent({ ...editingStudent, address: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleUpdateStudent}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition"
-                      >
-                        <Save className="w-4 h-4" />
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setEditingStudent(null)}
-                        className="flex items-center gap-2 bg-gray-300 hover:bg-gray-400 text-gray-900 px-4 py-2 rounded-lg font-medium transition"
-                      >
-                        <X className="w-4 h-4" />
-                        Cancel
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ) : null}
-              {filteredStudents.map(student => (
-                <tr key={student.id} className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-900">{student.name}</td>
-                  <td className="px-4 py-3 text-gray-900">{student.email}</td>
-                  <td className="px-4 py-3 text-gray-900">{student.class}</td>
-                  <td className="px-4 py-3 text-gray-900">{student.rollNo}</td>
-                  <td className="px-4 py-3 text-gray-900">{student.phone}</td>
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex justify-center gap-2">
-                      <button
-                        onClick={() => setEditingStudent(student)}
-                        className="text-blue-600 hover:text-blue-800 p-1"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteStudent(student.id)}
-                        className="text-red-600 hover:text-red-800 p-1"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={handleUpdateStudent}
+                          className="mr-2 text-green-600"
+                        >
+                          <Save className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => setEditingStudent(null)}>
+                          <X className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-4 py-3 text-gray-900">{student.name}</td>
+                      <td className="px-4 py-3 text-gray-600">{student.email}</td>
+                      <td className="px-4 py-3 text-center">{student.className}</td>
+                      <td className="px-4 py-3 text-center">{student.rollNo}</td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => setEditingStudent(student)}
+                          className="mr-2 text-blue-600"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStudent(student.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </>
+                  )}
+                </motion.tr>
               ))}
             </tbody>
           </table>
-        </div>
-        {filteredStudents.length === 0 && (
-          <div className="text-center py-8 bg-gray-50">
-            <p className="text-gray-600">No students found</p>
-          </div>
         )}
-      </div>
+      </motion.div>
     </Container>
   );
 };

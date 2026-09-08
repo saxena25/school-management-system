@@ -1,155 +1,137 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { knowledgeCheckApi } from '../services/api';
 
 const initialState = {
-  knowledgeChecks: [
-    {
-      id: 1,
-      title: 'Mathematics Fundamentals',
-      description: 'Test your understanding of basic mathematical concepts',
-      createdBy: 'Mr. Kumar',
-      createdDate: new Date('2026-03-01'),
-      attachedClasses: ['10A', '10B'],
-      questions: [
-        {
-          id: 1,
-          type: 'single-select',
-          text: 'What is 15 + 8?',
-          options: [
-            { id: 1, text: '20', isCorrect: false },
-            { id: 2, text: '23', isCorrect: true },
-            { id: 3, text: '25', isCorrect: false },
-            { id: 4, text: '28', isCorrect: false }
-          ],
-          explanation: '15 + 8 = 23. Remember to add the units place first.'
-        },
-        {
-          id: 2,
-          type: 'multi-select',
-          text: 'Which of the following are even numbers?',
-          options: [
-            { id: 1, text: '12', isCorrect: true },
-            { id: 2, text: '7', isCorrect: false },
-            { id: 3, text: '24', isCorrect: true },
-            { id: 4, text: '15', isCorrect: false }
-          ],
-          explanation: 'Even numbers are divisible by 2. So 12 and 24 are even numbers.'
-        },
-        {
-          id: 3,
-          type: 'yes-no',
-          text: 'Is the square root of 16 equal to 4?',
-          options: [
-            { id: 1, text: 'Yes', isCorrect: true },
-            { id: 2, text: 'No', isCorrect: false }
-          ],
-          explanation: 'Yes, √16 = 4 because 4 × 4 = 16.'
-        }
-      ]
-    }
-  ],
-  studentAttempts: [
-    {
-      id: 1,
-      studentId: 'student@school.com',
-      studentName: 'John Doe',
-      knowledgeCheckId: 1,
-      answers: [
-        { questionId: 1, selectedOptions: [2] },
-        { questionId: 2, selectedOptions: [1, 3] },
-        { questionId: 3, selectedOptions: [1] }
-      ],
-      score: 100,
-      totalQuestions: 3,
-      timestamp: new Date('2026-03-05'),
-      status: 'completed'
-    }
-  ]
+  knowledgeChecks: [],
+  studentAttempts: [],
+  loading: false,
+  error: null,
+  lastSubmission: null,
 };
+
+export const fetchKnowledgeChecks = createAsyncThunk(
+  'knowledgeCheck/fetchAll',
+  async (_, thunkAPI) => {
+    try {
+      return await knowledgeCheckApi.list();
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+export const createKnowledgeCheck = createAsyncThunk(
+  'knowledgeCheck/create',
+  async (payload, thunkAPI) => {
+    try {
+      return await knowledgeCheckApi.create(payload);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+export const updateKnowledgeCheck = createAsyncThunk(
+  'knowledgeCheck/update',
+  async ({ id, data }, thunkAPI) => {
+    try {
+      return await knowledgeCheckApi.update(id, data);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+export const attachKnowledgeChecks = createAsyncThunk(
+  'knowledgeCheck/attach',
+  async (payload, thunkAPI) => {
+    try {
+      return await knowledgeCheckApi.attach(payload);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+export const deleteKnowledgeCheck = createAsyncThunk(
+  'knowledgeCheck/delete',
+  async (id, thunkAPI) => {
+    try {
+      await knowledgeCheckApi.remove(id);
+      return id;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+export const submitAttempt = createAsyncThunk(
+  'knowledgeCheck/submitAttempt',
+  async ({ id, answers }, thunkAPI) => {
+    try {
+      return await knowledgeCheckApi.submitAttempt(id, { answers });
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
 
 const knowledgeCheckSlice = createSlice({
   name: 'knowledgeCheck',
   initialState,
   reducers: {
-    createKnowledgeCheck: {
-      reducer(state, action) {
-        state.knowledgeChecks.push(action.payload);
-      },
-      prepare(data) {
-        return {
-          payload: {
-            id: Date.now(),
-            ...data,
-            createdDate: new Date(),
-            createdBy: 'Mr. Kumar'
-          }
-        };
-      }
+    clearLastSubmission(state) {
+      state.lastSubmission = null;
     },
-    updateKnowledgeCheck(state, action) {
-      const { id, data } = action.payload;
-      state.knowledgeChecks = state.knowledgeChecks.map((kc) =>
-        kc.id === id ? { ...kc, ...data } : kc
-      );
-    },
-    deleteKnowledgeCheck(state, action) {
-      state.knowledgeChecks = state.knowledgeChecks.filter(kc => kc.id !== action.payload);
-    },
-    submitAttempt: {
-      reducer(state, action) {
-        state.studentAttempts.push(action.payload);
-      },
-      prepare(attemptData) {
-        const nextId = Date.now();
-        return {
-          payload: {
-            id: nextId,
-            ...attemptData,
-            timestamp: new Date(),
-            status: 'completed'
-          }
-        };
-      }
-    }
-  }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchKnowledgeChecks.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchKnowledgeChecks.fulfilled, (state, action) => {
+        state.loading = false;
+        state.knowledgeChecks = action.payload.knowledgeChecks || [];
+        state.studentAttempts = (action.payload.attempts || []).map((a) => ({
+          ...a,
+          timestamp: a.timestamp,
+        }));
+      })
+      .addCase(fetchKnowledgeChecks.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error.message;
+      })
+      .addCase(createKnowledgeCheck.fulfilled, (state, action) => {
+        state.knowledgeChecks.unshift(action.payload.knowledgeCheck);
+      })
+      .addCase(updateKnowledgeCheck.fulfilled, (state, action) => {
+        const updated = action.payload.knowledgeCheck;
+        state.knowledgeChecks = state.knowledgeChecks.map((kc) =>
+          kc.id === updated.id || kc._id === updated.id ? updated : kc
+        );
+      })
+      .addCase(attachKnowledgeChecks.fulfilled, (state, action) => {
+        const updatedMap = Object.fromEntries(
+          (action.payload.knowledgeChecks || []).map((kc) => [kc.id, kc])
+        );
+        state.knowledgeChecks = state.knowledgeChecks.map(
+          (kc) => updatedMap[kc.id] || kc
+        );
+      })
+      .addCase(deleteKnowledgeCheck.fulfilled, (state, action) => {
+        state.knowledgeChecks = state.knowledgeChecks.filter(
+          (kc) => kc.id !== action.payload && kc._id !== action.payload
+        );
+      })
+      .addCase(submitAttempt.fulfilled, (state, action) => {
+        state.lastSubmission = action.payload;
+        if (action.payload.attempt) {
+          state.studentAttempts.unshift(action.payload.attempt);
+        }
+      });
+  },
 });
 
-export const {
-  createKnowledgeCheck,
-  updateKnowledgeCheck,
-  deleteKnowledgeCheck,
-  submitAttempt
-} = knowledgeCheckSlice.actions;
-
-export const calculateScore = (knowledgeCheck, answers) => {
-  if (!knowledgeCheck || !Array.isArray(knowledgeCheck.questions)) return 0;
-
-  let correctCount = 0;
-  knowledgeCheck.questions.forEach((question) => {
-    const studentAnswer = answers.find(a => a.questionId === question.id);
-    if (!studentAnswer) return;
-
-    const correctOptions = question.options
-      .filter(opt => opt.isCorrect)
-      .map(opt => opt.id)
-      .sort((a, b) => a - b);
-
-    const selected = [...studentAnswer.selectedOptions].sort((a, b) => a - b);
-
-    if (question.type === 'single-select' || question.type === 'yes-no') {
-      if (selected.length === 1 && selected[0] === correctOptions[0]) {
-        correctCount += 1;
-      }
-    } else if (question.type === 'multi-select') {
-      if (
-        selected.length === correctOptions.length &&
-        selected.every((opt, index) => opt === correctOptions[index])
-      ) {
-        correctCount += 1;
-      }
-    }
-  });
-
-  return Math.round((correctCount / knowledgeCheck.questions.length) * 100);
-};
-
+export const { clearLastSubmission } = knowledgeCheckSlice.actions;
 export default knowledgeCheckSlice.reducer;
