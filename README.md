@@ -64,10 +64,24 @@ Full request/response shapes: [docs/API_CONTRACT.md](docs/API_CONTRACT.md)
 - Dashboards, notifications, and student timetable loaded from APIs
 - Motion polish on login, layout transitions, and cards
 
-## Project layout
+## Deploy on Vercel
 
-```
-src/                 # React app
-server/src/          # Express API
-docs/API_CONTRACT.md # API contract
-```
+The live site calls same-origin `/api/...`. Vercel now routes those to the Express API (`api/index.js`).
+
+1. Create a free [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) cluster and get a connection string.
+2. In Vercel → Project → Settings → Environment Variables, set:
+
+| Name | Value |
+|---|---|
+| `MONGODB_URI` | `mongodb+srv://USER:PASS@cluster.../edums` |
+| `JWT_SECRET` | any long random string |
+| `JWT_EXPIRES_IN` | `7d` |
+| `SEED_ON_START` | `true` (first deploy only; then set `false`) |
+| `CLIENT_ORIGIN` | `https://school-management-system-zeta-eight.vercel.app` |
+
+3. Redeploy the project.
+
+Do **not** leave `VITE_API_URL` pointing at localhost. Leave it unset so the app uses `/api` on the same Vercel domain.
+
+After deploy, this should work:
+`https://school-management-system-zeta-eight.vercel.app/api/auth/login`

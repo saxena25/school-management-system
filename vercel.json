@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "installCommand": "npm install && npm install --prefix server",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}
