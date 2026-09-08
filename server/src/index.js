@@ -24,23 +24,40 @@ const defaultOrigins = [
   'http://127.0.0.1:3000',
   'http://127.0.0.1:3001',
   'http://127.0.0.1:5173',
+  'https://school-management-system-zeta-eight.vercel.app',
 ];
 
 const allowedOrigins = [
-  ...defaultOrigins,
-  ...(process.env.CLIENT_ORIGIN
-    ? process.env.CLIENT_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
-    : []),
+  ...new Set([
+    ...defaultOrigins,
+    ...(process.env.CLIENT_ORIGIN
+      ? process.env.CLIENT_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+      : []),
+  ]),
 ];
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  // Allow Vercel preview deployments for this project
+  try {
+    const { hostname } = new URL(origin);
+    return (
+      hostname === 'school-management-system-zeta-eight.vercel.app' ||
+      /^school-management-system(-[a-z0-9-]+)?-.*\.vercel\.app$/i.test(hostname)
+    );
+  } catch {
+    return false;
+  }
+}
 
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow non-browser tools (curl/Postman) that send no Origin
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (isAllowedOrigin(origin)) {
         return callback(null, true);
       }
-      return callback(new Error(`CORS blocked for origin: ${origin}`));
+      return callback(null, false);
     },
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
